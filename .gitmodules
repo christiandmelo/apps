@@ -1,0 +1,6 @@
+[submodule "git-submodule-sync"]
+	path = git-submodule-sync
+	url = https://github.com/christiandmelo/git-submodule-sync
+[submodule "TestCoverageUI"]
+	path = TestCoverageUI
+	url = https://github.com/christiandmelo/TestCoverageUI
