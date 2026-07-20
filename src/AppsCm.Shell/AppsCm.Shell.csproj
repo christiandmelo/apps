@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>AppsCm</AssemblyName>
+    <ApplicationIcon>favicon.ico</ApplicationIcon>
+    <!-- O pacote Microsoft.Web.WebView2, trazido transitivamente pelo TestCoverageUI.UI,
+         referencia a variante WPF (WindowsBase) mesmo em projetos WinForms; o WindowsBase
+         4.0.0.0 escolhido automaticamente é o correto, o aviso é ruído -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\TestCoverageUI\TestCoverageUI.UI\TestCoverageUI.UI.csproj" />
+    <ProjectReference Include="..\..\git-submodule-sync\GitSubmoduleSync.UI\GitSubmoduleSync.UI.csproj" />
+    <!-- ReferenceOutputAssembly=false: o Updater não é uma dependência de código do shell, é um
+         exe standalone que precisa existir ao lado do AppsCm.exe em runtime (ver targets abaixo) -->
+    <ProjectReference Include="..\AppsCm.Updater\AppsCm.Updater.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Remove os apphosts dos módulos do publish do shell: o usuário só deve ver AppsCm.exe.
+       Rodar os módulos pelo próprio exe deles pularia o path de config/updater do shell. -->
+  <Target Name="RemoverAppHostsDosModulos" AfterTargets="Publish">
+    <Delete Files="$(PublishDir)TestCoverageUI.exe;$(PublishDir)GitSubmoduleSync.UI.exe" />
+  </Target>
+
+  <!-- O Updater é PublishSingleFile+RID próprio; um ProjectReference comum não copia esse
+       resultado, por isso publica-se explicitamente e copia-se o exe para o bin/publish do shell -->
+  <Target Name="PublicarUpdater" AfterTargets="Build">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\AppsCm.Updater\AppsCm.Updater.csproj&quot; -c $(Configuration) -r win-x64 --self-contained false /p:PublishSingleFile=true -o &quot;$(MSBuildThisFileDirectory)..\..\publish-updater&quot;" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\publish-updater\Updater.exe" DestinationFolder="$(OutDir)" />
+  </Target>
+
+  <Target Name="CopiarUpdaterNoPublish" AfterTargets="Publish" DependsOnTargets="PublicarUpdater">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\publish-updater\Updater.exe" DestinationFolder="$(PublishDir)" />
+  </Target>
+
+</Project>
