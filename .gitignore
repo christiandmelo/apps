@@ -37,6 +37,7 @@ Desktop.ini
 
 # Release
 *.zip
+apps-cm-setup.exe
 
 # Arquivos do Rider
 .idea/

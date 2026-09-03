@@ -41,20 +41,8 @@ public partial class ShellForm : Form
         _iconesModulos.Images.Add(modulo.Id, icone);
     }
 
-    var menuPrincipal = new MenuStrip { Dock = DockStyle.Top };
-    var mnuApps = new ToolStripMenuItem("Apps");
-    foreach (var modulo in Modulos)
-    {
-      var item = new ToolStripMenuItem(modulo.NomeExibicao);
-      if (modulo.Icone is { } icone)
-        item.Image = icone.ToBitmap();
-      item.Click += (_, _) => AbrirModulo(modulo);
-      mnuApps.DropDownItems.Add(item);
-    }
-    menuPrincipal.Items.Add(mnuApps);
-    MainMenuStrip = menuPrincipal;
-
     _tabControl = new TabControl { Dock = DockStyle.Fill, ImageList = _iconesModulos };
+    _tabControl.TabPages.Add(CriarAbaApps());
 
     _menuContextoAba = new ContextMenuStrip();
     var itemFechar = new ToolStripMenuItem("Fechar aba");
@@ -67,10 +55,76 @@ public partial class ShellForm : Form
     _tabControl.ContextMenuStrip = _menuContextoAba;
 
     Controls.Add(_tabControl);
-    Controls.Add(menuPrincipal);
 
     LimparArquivosAntigosDoUpdater();
     Load += async (_, _) => await VerificarAtualizacaoAsync();
+  }
+
+  // Aba fixa (não fica em _abas, não pode ser fechada) que substitui o antigo menu superior —
+  // mostra um ícone médio por módulo, clicável, poupando o clique extra de abrir um dropdown.
+  private TabPage CriarAbaApps()
+  {
+    var painel = new FlowLayoutPanel
+    {
+      Dock = DockStyle.Fill,
+      AutoScroll = true,
+      Padding = new Padding(16),
+    };
+
+    foreach (var modulo in Modulos)
+      painel.Controls.Add(CriarTile(modulo));
+
+    return new TabPage("Apps") { Controls = { painel } };
+  }
+
+  private Control CriarTile(IAppModule modulo)
+  {
+    const int ladoIcone = 56;
+
+    var tile = new Panel
+    {
+      Size = new Size(150, 160),
+      Margin = new Padding(8),
+      Cursor = Cursors.Hand,
+      BorderStyle = BorderStyle.FixedSingle,
+    };
+
+    var imagem = new PictureBox
+    {
+      Size = new Size(ladoIcone, ladoIcone),
+      Location = new Point((tile.Width - ladoIcone) / 2, 16),
+      SizeMode = PictureBoxSizeMode.Zoom,
+      Cursor = Cursors.Hand,
+      Image = modulo.Icone?.ToBitmap(),
+    };
+
+    var nome = new Label
+    {
+      Text = modulo.NomeExibicao,
+      TextAlign = ContentAlignment.TopCenter,
+      Location = new Point(4, ladoIcone + 26),
+      Size = new Size(tile.Width - 8, 60),
+      Cursor = Cursors.Hand,
+    };
+
+    tile.Controls.Add(imagem);
+    tile.Controls.Add(nome);
+
+    void AoClicar(object? s, EventArgs e) => AbrirModulo(modulo);
+    tile.Click += AoClicar;
+    imagem.Click += AoClicar;
+    nome.Click += AoClicar;
+
+    void AoEntrar(object? s, EventArgs e) => tile.BackColor = SystemColors.ControlLight;
+    void AoSair(object? s, EventArgs e) => tile.BackColor = SystemColors.Control;
+    tile.MouseEnter += AoEntrar;
+    tile.MouseLeave += AoSair;
+    imagem.MouseEnter += AoEntrar;
+    imagem.MouseLeave += AoSair;
+    nome.MouseEnter += AoEntrar;
+    nome.MouseLeave += AoSair;
+
+    return tile;
   }
 
   // O Updater se autoatualiza renomeando o próprio exe em uso para *.old (Windows bloqueia
@@ -147,7 +201,9 @@ public partial class ShellForm : Form
 
   private void FecharAba(TabPage aba)
   {
-    var modulo = (IAppModule)aba.Tag!;
+    // A aba "Apps" (Tag nulo) é fixa — não aparece no menu de contexto como fechável.
+    if (aba.Tag is not IAppModule modulo) return;
+
     var view = aba.Controls[0];
 
     if (!modulo.PodeFechar(view)) return;

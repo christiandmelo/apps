@@ -1,5 +1,6 @@
 {
-  "version": "1.0.1",
-  "url": "https://github.com/christiandmelo/apps/releases/download/1.0.1/apps-cm.zip",
-  "sha256": "19065d8f929c8dacea8281ad6ad1b76e4c3933192fb0d8187e2832683d137aad"
+  "version": "1.0.2",
+  "url": "https://github.com/christiandmelo/apps/releases/download/1.0.2/apps-cm.zip",
+  "sha256": "932b87ba569964d620810e85abc786d72973c47c9d8b4047275803c9ee6dc462",
+  "installerUrl": "https://github.com/christiandmelo/apps/releases/download/1.0.2/apps-cm-setup.exe"
 }
