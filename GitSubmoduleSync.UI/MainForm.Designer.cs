@@ -34,6 +34,7 @@ partial class MainForm
   private System.Windows.Forms.Button btnSoCompilar;
   private System.Windows.Forms.Button btnCancelar;
   private System.Windows.Forms.Label lblCronometro;
+  private System.Windows.Forms.Button btnAtualizarPonteiros;
 
   private System.Windows.Forms.Panel painelProgresso;
   private System.Windows.Forms.Label lblProgressoGit;
@@ -74,6 +75,7 @@ partial class MainForm
     btnConfiguracoes = new Button();
     cboPerfil = new ComboBox();
     painelBotoes = new Panel();
+    btnAtualizarPonteiros = new Button();
     lblCronometro = new Label();
     btnCancelar = new Button();
     btnSoCompilar = new Button();
@@ -222,6 +224,7 @@ partial class MainForm
     // 
     // painelBotoes
     // 
+    painelBotoes.Controls.Add(btnAtualizarPonteiros);
     painelBotoes.Controls.Add(lblCronometro);
     painelBotoes.Controls.Add(btnCancelar);
     painelBotoes.Controls.Add(btnSoCompilar);
@@ -253,6 +256,16 @@ partial class MainForm
     lblCronometro.Size = new Size(56, 20);
     lblCronometro.TabIndex = 4;
     lblCronometro.Text = "";
+    //
+    // btnAtualizarPonteiros
+    //
+    btnAtualizarPonteiros.Location = new Point(580, 7);
+    btnAtualizarPonteiros.Margin = new Padding(3, 4, 3, 4);
+    btnAtualizarPonteiros.Name = "btnAtualizarPonteiros";
+    btnAtualizarPonteiros.Size = new Size(300, 36);
+    btnAtualizarPonteiros.TabIndex = 5;
+    btnAtualizarPonteiros.Text = "Atualizar ponteiros de submódulos";
+    btnAtualizarPonteiros.UseVisualStyleBackColor = true;
     //
     // btnSoCompilar
     // 

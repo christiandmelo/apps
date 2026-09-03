@@ -8,9 +8,10 @@ public sealed class GitService
 {
   private readonly BranchResolver _branchResolver = new();
 
-  public async Task<IReadOnlyList<SubmoduloInfo>> DescobrirAsync(string pastaRaiz, CancellationToken ct)
+  public async Task<IReadOnlyList<SubmoduloInfo>> DescobrirAsync(string pastaRaiz, CancellationToken ct, IProgress<LogEvent>? log = null)
   {
     var declarados = LerGitmodules(pastaRaiz);
+    log?.Report(new LogEvent(NivelLog.Detalhe, "verificando status dos submódulos (git submodule status)…"));
     var status = await LerSubmoduleStatusAsync(pastaRaiz, ct);
 
     return declarados
@@ -24,6 +25,7 @@ public sealed class GitService
   {
     var sw = Stopwatch.StartNew();
 
+    log.Report(new LogEvent(NivelLog.Detalhe, "verificando status do repositório pai…"));
     var statusResultado = await GitProcessRunner.ExecutarAsync(pastaRaiz, "status --porcelain", ct);
     if (!statusResultado.Sucesso)
     {
@@ -33,11 +35,17 @@ public sealed class GitService
     }
     if (!string.IsNullOrWhiteSpace(statusResultado.Saida))
     {
-      sw.Stop();
-      log.Report(new LogEvent(NivelLog.Aviso, "repositório pai com alterações não commitadas — pulado (nenhum arquivo local foi tocado)."));
-      return new ResultadoEtapa("Repositório pai", false, sw.Elapsed, "WorkingTreeSujo");
+      var caminhosSubmodulos = LerGitmodules(pastaRaiz).Select(d => d.Path).ToList();
+      if (!ContemApenasSujeiraDeSubmodulos(statusResultado.Saida, caminhosSubmodulos))
+      {
+        sw.Stop();
+        log.Report(new LogEvent(NivelLog.Aviso, "repositório pai com alterações não commitadas — pulado (nenhum arquivo local foi tocado)."));
+        return new ResultadoEtapa("Repositório pai", false, sw.Elapsed, "WorkingTreeSujo");
+      }
+      log.Report(new LogEvent(NivelLog.Aviso, "repositório pai com ponteiro(s) de submódulo desatualizado(s) — prosseguindo com o pull."));
     }
 
+    log.Report(new LogEvent(NivelLog.Detalhe, "atualizando repositório pai (git pull)…"));
     var pull = await GitProcessRunner.ExecutarAsync(pastaRaiz, "pull --ff-only", ct);
     sw.Stop();
 
@@ -54,7 +62,8 @@ public sealed class GitService
   public async Task<IReadOnlyList<ResultadoSubmodulo>> SincronizarAsync(
     SyncProfile perfil, IProgress<LogEvent> log, CancellationToken ct, IProgress<ProgressoGit>? progresso = null)
   {
-    var todos = await DescobrirAsync(perfil.PastaRaiz, ct);
+    log.Report(new LogEvent(NivelLog.Detalhe, "descobrindo submódulos declarados no .gitmodules…"));
+    var todos = await DescobrirAsync(perfil.PastaRaiz, ct, log);
     var alvo = todos
       .Where(s => !perfil.SubmodulosIgnorados.Contains(s.Nome, StringComparer.OrdinalIgnoreCase))
       .ToList();
@@ -83,6 +92,135 @@ public sealed class GitService
     return await Task.WhenAll(tarefas);
   }
 
+  public async Task<IReadOnlyList<ResultadoPonteiroSubmodulo>> AtualizarPonteirosSubmodulosAsync(
+    SyncProfile perfil, IProgress<LogEvent> log, CancellationToken ct, IProgress<ProgressoGit>? progresso = null)
+  {
+    log.Report(new LogEvent(NivelLog.Detalhe, "descobrindo submódulos declarados no .gitmodules…"));
+    var todos = await DescobrirAsync(perfil.PastaRaiz, ct, log);
+    var alvo = todos
+      .Where(s => s.Inicializado)
+      .Where(s => !perfil.SubmodulosIgnorados.Contains(s.Nome, StringComparer.OrdinalIgnoreCase))
+      .ToList();
+
+    using var semaforo = new SemaphoreSlim(perfil.GrauParalelismoGit > 0 ? perfil.GrauParalelismoGit : 4);
+
+    var concluidos = 0;
+    var total = alvo.Count;
+    progresso?.Report(new ProgressoGit(0, total));
+
+    var tarefas = alvo.Select(async proj =>
+    {
+      await semaforo.WaitAsync(ct);
+      try
+      {
+        return await AtualizarPonteirosDeUmAsync(perfil, proj, log, ct);
+      }
+      finally
+      {
+        semaforo.Release();
+        var c = Interlocked.Increment(ref concluidos);
+        progresso?.Report(new ProgressoGit(c, total));
+      }
+    });
+
+    return await Task.WhenAll(tarefas);
+  }
+
+  private async Task<ResultadoPonteiroSubmodulo> AtualizarPonteirosDeUmAsync(
+    SyncProfile perfil, SubmoduloInfo proj, IProgress<LogEvent> log, CancellationToken ct)
+  {
+    var caminhoProjeto = Path.Combine(perfil.PastaRaiz, proj.Caminho);
+    var filhos = LerGitmodules(caminhoProjeto);
+    if (filhos.Count == 0)
+    {
+      log.Report(new LogEvent(NivelLog.Detalhe, "sem submódulos filhos — nada a atualizar.", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.SemSubmodulosFilhos, Array.Empty<string>(), null);
+    }
+
+    var filhosAtualizados = new List<string>();
+    foreach (var filho in filhos)
+    {
+      ct.ThrowIfCancellationRequested();
+      var caminhoFilho = Path.Combine(caminhoProjeto, filho.Path);
+      if (!Directory.Exists(caminhoFilho))
+      {
+        log.Report(new LogEvent(NivelLog.Aviso, $"submódulo filho '{filho.Path}' não inicializado — pulado.", Submodulo: proj.Nome));
+        continue;
+      }
+
+      // Tenta sempre checkout na branch "main" da skill; se não existir, loga erro e pula
+      // esse filho (não tenta adivinhar outra branch).
+      log.Report(new LogEvent(NivelLog.Detalhe, $"alternando '{filho.Path}' para a branch 'main'…", Submodulo: proj.Nome));
+      var checkout = await GitProcessRunner.ExecutarAsync(caminhoFilho, "checkout main", ct);
+      if (!checkout.Sucesso)
+      {
+        log.Report(new LogEvent(NivelLog.Erro, $"não foi possível fazer checkout na branch 'main' de '{filho.Path}': {checkout.Erro.Trim()}", Submodulo: proj.Nome));
+        continue;
+      }
+
+      log.Report(new LogEvent(NivelLog.Detalhe, $"atualizando '{filho.Path}' (git pull)…", Submodulo: proj.Nome));
+      var pull = await GitProcessRunner.ExecutarAsync(caminhoFilho, "pull --ff-only origin main", ct);
+      if (!pull.Sucesso)
+      {
+        log.Report(new LogEvent(NivelLog.Erro, $"falha ao atualizar '{filho.Path}': {pull.Erro.Trim()}", Submodulo: proj.Nome));
+        return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.Erro, filhosAtualizados, pull.Erro);
+      }
+      if (!pull.Saida.Contains("up to date", StringComparison.OrdinalIgnoreCase))
+      {
+        filhosAtualizados.Add(filho.Path);
+      }
+    }
+
+    var statusResultado = await GitProcessRunner.ExecutarAsync(caminhoProjeto, "status --porcelain", ct);
+    if (!statusResultado.Sucesso)
+    {
+      log.Report(new LogEvent(NivelLog.Erro, "não foi possível verificar o status do projeto após atualizar as skills.", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.Erro, filhosAtualizados, statusResultado.Erro);
+    }
+    if (string.IsNullOrWhiteSpace(statusResultado.Saida))
+    {
+      log.Report(new LogEvent(NivelLog.Info, "ponteiro(s) já estavam atualizados.", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.NadaAAtualizar, filhosAtualizados, null);
+    }
+
+    var caminhosFilhos = filhos.Select(f => f.Path).ToList();
+    if (!ContemApenasSujeiraDeSubmodulos(statusResultado.Saida, caminhosFilhos))
+    {
+      log.Report(new LogEvent(NivelLog.Aviso,
+        "projeto tem alterações locais além do(s) ponteiro(s) de submódulo — commit/push do ponteiro foi pulado (ação manual necessária).",
+        Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.AlteracaoRealDetectada, filhosAtualizados, statusResultado.Saida);
+    }
+
+    var argAdd = string.Join(' ', caminhosFilhos.Select(c => $"\"{c}\""));
+    var add = await GitProcessRunner.ExecutarAsync(caminhoProjeto, $"add {argAdd}", ct);
+    if (!add.Sucesso)
+    {
+      log.Report(new LogEvent(NivelLog.Erro, $"falha ao adicionar ponteiro(s) ao stage: {add.Erro.Trim()}", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.Erro, filhosAtualizados, add.Erro);
+    }
+
+    var commit = await GitProcessRunner.ExecutarAsync(caminhoProjeto, "commit -m \"Atualizando ponteiro\"", ct);
+    if (!commit.Sucesso)
+    {
+      log.Report(new LogEvent(NivelLog.Erro, $"falha ao commitar ponteiro: {commit.Erro.Trim()}", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.Erro, filhosAtualizados, commit.Erro);
+    }
+
+    // Commit já é irreversível localmente: sempre tenta o push (CancellationToken.None) mesmo
+    // se o usuário cancelar agora, para nunca deixar um commit órfão sem tentativa de envio.
+    log.Report(new LogEvent(NivelLog.Detalhe, "enviando ponteiro atualizado ao remoto (git push)…", Submodulo: proj.Nome));
+    var push = await GitProcessRunner.ExecutarAsync(caminhoProjeto, "push", CancellationToken.None);
+    if (!push.Sucesso)
+    {
+      log.Report(new LogEvent(NivelLog.Erro, $"commit feito localmente, mas o push falhou: {push.Erro.Trim()}", Submodulo: proj.Nome));
+      return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.FalhaNoPush, filhosAtualizados, push.Erro);
+    }
+
+    log.Report(new LogEvent(NivelLog.Sucesso, $"ponteiro(s) atualizado(s) e enviado(s): {string.Join(", ", filhosAtualizados)}.", Submodulo: proj.Nome));
+    return new ResultadoPonteiroSubmodulo(proj.Nome, StatusPonteiroSubmodulo.PonteiroAtualizado, filhosAtualizados, null);
+  }
+
   private async Task<ResultadoSubmodulo> SincronizarUmAsync(
     SyncProfile perfil, SubmoduloInfo sub, IProgress<LogEvent> log, CancellationToken ct)
   {
@@ -103,6 +241,7 @@ public sealed class GitService
     var overrideExplicito = projetoConfig?.Branch is not null;
     var branchDesejada = projetoConfig?.Branch ?? perfil.BranchBase;
 
+    log.Report(new LogEvent(NivelLog.Detalhe, "consultando branches remotas (git ls-remote)…", Submodulo: sub.Nome));
     var resolucao = await _branchResolver.ResolverAsync(caminho, branchDesejada, overrideExplicito, perfil.BranchesFallback, ct);
 
     if (resolucao.Status == StatusSubmodulo.BranchNaoEncontrada)
@@ -137,11 +276,17 @@ public sealed class GitService
     }
     if (!string.IsNullOrWhiteSpace(statusResultado.Saida))
     {
-      var arquivos = string.Join(", ", statusResultado.Saida.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5));
-      log.Report(new LogEvent(NivelLog.Erro, $"working tree com alterações não commitadas — pulado: {arquivos}", Submodulo: sub.Nome));
-      return new ResultadoSubmodulo(sub.Nome, StatusSubmodulo.WorkingTreeSujo, branch, statusResultado.Saida);
+      var caminhosFilhos = LerGitmodules(caminho).Select(d => d.Path).ToList();
+      if (!ContemApenasSujeiraDeSubmodulos(statusResultado.Saida, caminhosFilhos))
+      {
+        var arquivos = string.Join(", ", statusResultado.Saida.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5));
+        log.Report(new LogEvent(NivelLog.Erro, $"working tree com alterações não commitadas — pulado: {arquivos}", Submodulo: sub.Nome));
+        return new ResultadoSubmodulo(sub.Nome, StatusSubmodulo.WorkingTreeSujo, branch, statusResultado.Saida);
+      }
+      log.Report(new LogEvent(NivelLog.Aviso, $"ponteiro(s) de submódulo desatualizado(s) ({string.Join(", ", caminhosFilhos)}) — prosseguindo com a sincronização.", Submodulo: sub.Nome));
     }
 
+    log.Report(new LogEvent(NivelLog.Detalhe, "buscando atualizações do remoto (git fetch)…", Submodulo: sub.Nome));
     var fetch = await GitProcessRunner.ExecutarAsync(caminho, "fetch origin --prune", ct);
     if (!fetch.Sucesso)
     {
@@ -149,6 +294,7 @@ public sealed class GitService
       return new ResultadoSubmodulo(sub.Nome, StatusSubmodulo.Erro, branch, fetch.Erro);
     }
 
+    log.Report(new LogEvent(NivelLog.Detalhe, $"alternando para a branch '{branch}'…", Submodulo: sub.Nome));
     var checkout = await GitProcessRunner.ExecutarAsync(caminho, $"checkout \"{branch}\"", ct);
     if (!checkout.Sucesso)
     {
@@ -156,6 +302,7 @@ public sealed class GitService
       return new ResultadoSubmodulo(sub.Nome, StatusSubmodulo.Erro, branch, checkout.Erro);
     }
 
+    log.Report(new LogEvent(NivelLog.Detalhe, $"atualizando (git pull) em '{branch}'…", Submodulo: sub.Nome));
     var pull = await GitProcessRunner.ExecutarAsync(caminho, $"pull --ff-only origin \"{branch}\"", ct);
     if (!pull.Sucesso)
     {
@@ -165,6 +312,33 @@ public sealed class GitService
 
     log.Report(new LogEvent(NivelLog.Sucesso, $"sincronizado em '{branch}'.", Submodulo: sub.Nome));
     return new ResultadoSubmodulo(sub.Nome, StatusSubmodulo.Sincronizado, branch, null);
+  }
+
+  /// <summary>
+  /// true = toda a saída de "status --porcelain" é exclusivamente ponteiro (gitlink) de
+  /// submódulo modificado no worktree e não staged (padrão " M &lt;path&gt;") — seguro para
+  /// prosseguir com fetch/checkout/pull (o --ff-only continua sendo a rede de segurança
+  /// real, I1). false = qualquer outra coisa (staged, rename, conflito, untracked, arquivo
+  /// real) — deve bloquear como antes.
+  /// </summary>
+  private static bool ContemApenasSujeiraDeSubmodulos(string statusPorcelain, IReadOnlyCollection<string> caminhosSubmodulosDeclarados)
+  {
+    if (string.IsNullOrWhiteSpace(statusPorcelain)) return true;
+
+    var declarados = new HashSet<string>(
+      caminhosSubmodulosDeclarados.Select(c => c.Trim().TrimEnd('/')),
+      StringComparer.OrdinalIgnoreCase);
+
+    foreach (var linhaBruta in statusPorcelain.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+    {
+      var linha = linhaBruta.TrimEnd('\r');
+      if (linha.Length < 4) return false;
+      if (linha[0] != ' ' || linha[1] != 'M') return false;
+
+      var caminho = linha[3..].Trim().TrimEnd('/');
+      if (!declarados.Contains(caminho)) return false;
+    }
+    return true;
   }
 
   // --- .gitmodules ---

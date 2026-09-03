@@ -13,3 +13,6 @@ public sealed record ResultadoSubmodulo(
   string Submodulo, StatusSubmodulo Status, string? BranchResolvida, string? Detalhe);
 
 public sealed record ProgressoGit(int Concluidos, int Total);
+
+public sealed record ResultadoPonteiroSubmodulo(
+  string Projeto, StatusPonteiroSubmodulo Status, IReadOnlyList<string> FilhosAtualizadosPeloPull, string? Detalhe);

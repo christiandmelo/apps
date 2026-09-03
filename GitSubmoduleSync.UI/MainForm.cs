@@ -42,6 +42,7 @@ public partial class MainForm : Form
     btnSoSincronizar.Click += async (_, _) => await ExecutarPipelineAsync(sincronizar: true, compilar: false);
     btnSoCompilar.Click += async (_, _) => await ExecutarPipelineAsync(sincronizar: false, compilar: true);
     btnCancelar.Click += (_, _) => _cts?.Cancel();
+    btnAtualizarPonteiros.Click += async (_, _) => await ExecutarAtualizacaoPonteirosAsync();
     btnCopiarResumo.Click += (_, _) => { if (txtResumo.Text.Length > 0) Clipboard.SetText(txtResumo.Text); };
     lvErros.DoubleClick += (_, _) => AoDarDuploCliqueEmErro();
     tvOrdem.AfterSelect += (_, e) => AoSelecionarNoDaArvore(e.Node);
@@ -128,6 +129,7 @@ public partial class MainForm : Form
     btnExecutarTudo.Enabled = habilitado && !_emExecucao;
     btnSoSincronizar.Enabled = habilitado && !_emExecucao;
     btnSoCompilar.Enabled = habilitado && !_emExecucao;
+    btnAtualizarPonteiros.Enabled = habilitado && !_emExecucao;
   }
 
   // ==================== Execução ====================
@@ -254,6 +256,77 @@ public partial class MainForm : Form
     lblProgressoGit.Text = "Git: aguardando…";
     lblProgressoBuild.Text = "Build: aguardando…";
     lblCronometro.Text = "";
+  }
+
+  private async Task ExecutarAtualizacaoPonteirosAsync()
+  {
+    if (_perfil is null || _emExecucao) return;
+
+    var resp = MessageBox.Show(this,
+      "Isso vai verificar os submódulos de cada projeto, atualizar (pull) as skills desatualizadas e, quando só o ponteiro tiver mudado, commitar e enviar (push) automaticamente para o repositório remoto de cada projeto.\n\nDeseja continuar?",
+      "Atualizar ponteiros de submódulos", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+    if (resp != DialogResult.Yes) return;
+
+    var progressoLog = new Progress<LogEvent>(AoReceberLog);
+    var progressoGit = new Progress<ProgressoGit>(AoReceberProgressoGit);
+
+    _emExecucao = true;
+    HabilitarAcoes(false);
+    btnCancelar.Enabled = true;
+    LimparParaNovaExecucao();
+
+    _cts = new CancellationTokenSource();
+    var ct = _cts.Token;
+    _cronometro = Stopwatch.StartNew();
+    timerProgresso.Start();
+
+    IReadOnlyList<ResultadoPonteiroSubmodulo>? resultados = null;
+    try
+    {
+      AoReceberLog(new LogEvent(NivelLog.Info, $"Iniciando atualização de ponteiros de submódulos — perfil '{_perfil.Nome}'."));
+      resultados = await _gitService.AtualizarPonteirosSubmodulosAsync(_perfil, progressoLog, ct, progressoGit);
+      AoReceberLog(new LogEvent(NivelLog.Sucesso, "Atualização de ponteiros concluída."));
+    }
+    catch (OperationCanceledException)
+    {
+      AoReceberLog(new LogEvent(NivelLog.Aviso, "Atualização cancelada pelo usuário."));
+    }
+    catch (Exception ex)
+    {
+      AoReceberLog(new LogEvent(NivelLog.Erro, $"erro inesperado: {ex.Message}"));
+    }
+    finally
+    {
+      _cronometro.Stop();
+      timerProgresso.Stop();
+      if (resultados is not null) AtualizarResumoPonteiros(resultados);
+      GravarLogEmArquivo();
+
+      _emExecucao = false;
+      btnCancelar.Enabled = false;
+      HabilitarAcoes(true);
+      _cts?.Dispose();
+      _cts = null;
+    }
+  }
+
+  private void AtualizarResumoPonteiros(IReadOnlyList<ResultadoPonteiroSubmodulo> resultados)
+  {
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine(new string('=', 68));
+    sb.AppendLine($"   RESUMO — ATUALIZAÇÃO DE PONTEIROS DE SUBMÓDULOS — perfil {_perfil?.Nome}");
+    sb.AppendLine(new string('=', 68));
+    foreach (var r in resultados.Where(r => r.Status != StatusPonteiroSubmodulo.SemSubmodulosFilhos))
+      sb.AppendLine($"   {r.Projeto,-40} {r.Status}");
+    sb.AppendLine(new string('-', 68));
+    sb.AppendLine($"   Enviados .................. {resultados.Count(r => r.Status == StatusPonteiroSubmodulo.PonteiroAtualizado)}");
+    sb.AppendLine($"   Já atualizados ............ {resultados.Count(r => r.Status == StatusPonteiroSubmodulo.NadaAAtualizar)}");
+    sb.AppendLine($"   Pulados (alteração real) .. {resultados.Count(r => r.Status == StatusPonteiroSubmodulo.AlteracaoRealDetectada)}");
+    sb.AppendLine($"   Erros / falha de push ..... {resultados.Count(r => r.Status is StatusPonteiroSubmodulo.Erro or StatusPonteiroSubmodulo.FalhaNoPush)}");
+    sb.AppendLine($"   Sem submódulos filhos ..... {resultados.Count(r => r.Status == StatusPonteiroSubmodulo.SemSubmodulosFilhos)}");
+    sb.AppendLine($"   TEMPO TOTAL ............... {_cronometro.Elapsed:mm\\:ss}");
+    sb.AppendLine(new string('=', 68));
+    txtResumo.Text = sb.ToString();
   }
 
   // ==================== Log ====================
