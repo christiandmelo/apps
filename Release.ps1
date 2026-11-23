@@ -24,6 +24,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# O feed NuGet privado da TOTVS retorna 401 sem autenticação; restaurar só do nuget.org (somente neste processo).
+$env:RestoreSources = "https://api.nuget.org/v3/index.json"
+
 $repoDir = $PSScriptRoot
 $buildProps = Join-Path $repoDir "src\Directory.Build.props"
 $shellCsproj = Join-Path $repoDir "src\AppsCm.Shell\AppsCm.Shell.csproj"
