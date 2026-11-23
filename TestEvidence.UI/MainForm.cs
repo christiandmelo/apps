@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using TestEvidence.Models;
 using TestEvidence.Services;
+using TestEvidence.UI.Visual;
 
 namespace TestEvidence.UI;
 
@@ -10,9 +11,10 @@ public sealed class MainForm : Form
   private ConfiguracaoApp _config = new();
   private bool _inicializado;
 
-  private readonly Panel _faixa = new() { Dock = DockStyle.Top, Height = 40, BackColor = Color.FromArgb(255, 244, 206), Visible = false };
-  private readonly Label _lblFaixa = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(8, 0, 0, 0) };
-  private readonly Button _btnRetomarFaixa = new() { Text = "Retomar", Dock = DockStyle.Right, Width = 100 };
+  private readonly Aviso _faixa = new() { Dock = DockStyle.Top, Height = 52, Visible = false };
+  private readonly Panel _espacoFaixa = new() { Dock = DockStyle.Top, Height = 12, Visible = false };
+  private readonly Label _lblFaixa = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Tema.Alerta, Font = Tema.FonteSemibold };
+  private readonly Button _btnRetomarFaixa = Tema.BotaoPrimario("Retomar");
   private readonly ListView _lista = new()
   {
     Dock = DockStyle.Fill,
@@ -21,14 +23,24 @@ public sealed class MainForm : Form
     MultiSelect = false,
     HideSelection = false
   };
-  private readonly Button _btnNova = new() { Text = "Nova evidência", Width = 130, Height = 30 };
-  private readonly Button _btnConfig = new() { Text = "Configurações", Width = 110, Height = 30 };
-  private readonly Button _btnRevisao = new() { Text = "Abrir revisão", AutoSize = true };
-  private readonly Button _btnRetomar = new() { Text = "Retomar", AutoSize = true };
-  private readonly Button _btnGerar = new() { Text = "Gerar documento", AutoSize = true };
-  private readonly Button _btnAbrirDoc = new() { Text = "Abrir documento", AutoSize = true };
-  private readonly Button _btnAbrirPasta = new() { Text = "Abrir pasta", AutoSize = true };
-  private readonly Button _btnExcluir = new() { Text = "Excluir", AutoSize = true };
+  private readonly Label _vazio = new()
+  {
+    Dock = DockStyle.Fill,
+    TextAlign = ContentAlignment.MiddleCenter,
+    ForeColor = Tema.TextoSecundario,
+    BackColor = Tema.Superficie,
+    Text = "Nenhuma evidência ainda.\nClique em \"Nova evidência\" para começar.",
+    Visible = false
+  };
+  private readonly Label _lblSubtitulo = new() { AutoSize = true, ForeColor = Tema.TextoSecundario, Location = new Point(21, 44) };
+  private readonly Button _btnNova = Tema.BotaoPrimario("+ Nova evidência");
+  private readonly Button _btnConfig = Tema.BotaoSecundario("Configurações");
+  private readonly Button _btnRevisao = Tema.BotaoSecundario("Abrir revisão");
+  private readonly Button _btnRetomar = Tema.BotaoSecundario("Retomar");
+  private readonly Button _btnGerar = Tema.BotaoSecundario("Gerar documento");
+  private readonly Button _btnAbrirDoc = Tema.BotaoSecundario("Abrir documento");
+  private readonly Button _btnAbrirPasta = Tema.BotaoSecundario("Abrir pasta");
+  private readonly Button _btnExcluir = Tema.BotaoPerigo("Excluir");
   private SessaoEvidencia? _sessaoEmAndamento;
 
   /// <summary>True enquanto existe uma evidência ativa (barra flutuante aberta) — usado pelo shell ao fechar a aba.</summary>
@@ -40,25 +52,61 @@ public sealed class MainForm : Form
   {
     Text = "Evidência de Teste";
     Icon = IconeApp.Obter();
-    ClientSize = new Size(900, 560);
-    MinimumSize = new Size(700, 400);
+    ClientSize = new Size(1000, 620);
+    MinimumSize = new Size(760, 440);
     StartPosition = FormStartPosition.CenterScreen;
+    Tema.Aplicar(this);
 
-    _lista.Columns.Add("Tarefa", 120);
-    _lista.Columns.Add("Título", 280);
+    _lista.Columns.Add("Tarefa", 130);
+    _lista.Columns.Add("Título", 300);
     _lista.Columns.Add("Início", 130);
-    _lista.Columns.Add("Prints", 60);
-    _lista.Columns.Add("Resultado", 100);
-    _lista.Columns.Add("Status", 100);
+    _lista.Columns.Add("Prints", 70);
+    _lista.Columns.Add("Resultado", 120);
+    _lista.Columns.Add("Status", 110);
+    Tema.EstilizarLista(_lista);
 
-    var topo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(6) };
-    topo.Controls.AddRange(new Control[] { _btnNova, _btnConfig });
+    // cabeçalho: título + resumo à esquerda, ações principais à direita
+    var cabecalho = new FaixaComBorda { Dock = DockStyle.Top, Height = 76, Padding = new Padding(20, 0, 20, 0) };
+    var titulo = new Label { Text = "Evidências de teste", Font = Tema.FonteTitulo, AutoSize = true, Location = new Point(18, 12) };
+    var botoesTopo = new FlowLayoutPanel
+    {
+      Dock = DockStyle.Right,
+      AutoSize = true,
+      WrapContents = false,
+      Padding = new Padding(0, 21, 0, 0),
+      BackColor = Tema.Superficie
+    };
+    _btnNova.Margin = Padding.Empty;
+    botoesTopo.Controls.AddRange(new Control[] { _btnConfig, _btnNova });
+    cabecalho.Controls.Add(titulo);
+    cabecalho.Controls.Add(_lblSubtitulo);
+    cabecalho.Controls.Add(botoesTopo);
 
+    // corpo: aviso de evidência em andamento + cartão com a lista
+    _btnRetomarFaixa.Dock = DockStyle.Right;
+    _btnRetomarFaixa.Margin = Padding.Empty;
     _faixa.Controls.Add(_lblFaixa);
     _faixa.Controls.Add(_btnRetomarFaixa);
 
-    var acoes = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, Padding = new Padding(6) };
-    acoes.Controls.AddRange(new Control[] { _btnRevisao, _btnRetomar, _btnGerar, _btnAbrirDoc, _btnAbrirPasta, _btnExcluir });
+    var cartao = new Cartao { Dock = DockStyle.Fill };
+    cartao.Controls.Add(_lista);
+    cartao.Controls.Add(_vazio);
+    _vazio.BringToFront();
+
+    var corpo = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 16, 20, 16) };
+    corpo.Controls.Add(cartao);
+    corpo.Controls.Add(_espacoFaixa);
+    corpo.Controls.Add(_faixa);
+
+    // rodapé: ações da evidência selecionada; Excluir separado à direita
+    var rodape = new FaixaComBorda { BordaEmCima = true, Dock = DockStyle.Bottom, Height = 62, Padding = new Padding(20, 14, 20, 0) };
+    var acoes = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, BackColor = Tema.Superficie };
+    acoes.Controls.AddRange(new Control[] { _btnRevisao, _btnRetomar, _btnGerar, _btnAbrirDoc, _btnAbrirPasta });
+    var acoesPerigo = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, WrapContents = false, BackColor = Tema.Superficie };
+    _btnExcluir.Margin = Padding.Empty;
+    acoesPerigo.Controls.Add(_btnExcluir);
+    rodape.Controls.Add(acoes);
+    rodape.Controls.Add(acoesPerigo);
 
     var menu = new ContextMenuStrip();
     menu.Items.Add("Abrir revisão", null, (_, _) => AbrirRevisao());
@@ -69,10 +117,9 @@ public sealed class MainForm : Form
     menu.Items.Add("Excluir", null, (_, _) => Excluir());
     _lista.ContextMenuStrip = menu;
 
-    Controls.Add(_lista);
-    Controls.Add(acoes);
-    Controls.Add(_faixa);
-    Controls.Add(topo);
+    Controls.Add(corpo);
+    Controls.Add(rodape);
+    Controls.Add(cabecalho);
 
     _btnNova.Click += (_, _) => NovaEvidencia();
     _btnConfig.Click += (_, _) => { using var f = new ConfigForm(_config); f.ShowDialog(Dono); };
@@ -128,17 +175,18 @@ public sealed class MainForm : Form
     _lista.Items.Clear();
     foreach (var s in sessoes)
     {
-      var item = new ListViewItem(s.Tarefa) { Tag = s };
+      var item = new ListViewItem(s.Tarefa) { Tag = s, UseItemStyleForSubItems = false };
       item.SubItems.Add(s.Titulo);
       item.SubItems.Add(s.Inicio.ToString("dd/MM/yyyy HH:mm"));
       item.SubItems.Add(s.Evidencias.Count.ToString());
-      item.SubItems.Add(s.Resultado switch
+      var (textoResultado, corResultado) = s.Resultado switch
       {
-        ResultadoTeste.Aprovado => "Aprovado",
-        ResultadoTeste.Reprovado => "Reprovado",
-        ResultadoTeste.ComRessalvas => "Com ressalvas",
-        _ => "Pendente"
-      });
+        ResultadoTeste.Aprovado => ("Aprovado", Tema.Sucesso),
+        ResultadoTeste.Reprovado => ("Reprovado", Tema.Perigo),
+        ResultadoTeste.ComRessalvas => ("Com ressalvas", Tema.Alerta),
+        _ => ("Pendente", Tema.TextoSecundario)
+      };
+      item.SubItems.Add(new ListViewItem.ListViewSubItem(item, textoResultado) { ForeColor = corResultado, Font = Tema.FonteSemibold });
       var ativa = ControladorSessao.Ativo?.Sessao.Id == s.Id;
       item.SubItems.Add(ativa ? "Em andamento" : s.Status switch
       {
@@ -150,11 +198,15 @@ public sealed class MainForm : Form
       _lista.Items.Add(item);
     }
     _lista.EndUpdate();
+    _vazio.Visible = sessoes.Count == 0;
+    var abertas = sessoes.Count(x => x.Status != StatusSessao.Finalizada);
+    _lblSubtitulo.Text = sessoes.Count == 0 ? "Nenhuma evidência registrada"
+      : $"{sessoes.Count} {(sessoes.Count == 1 ? "evidência" : "evidências")}" + (abertas > 0 ? $" · {abertas} em aberto" : "");
 
     _sessaoEmAndamento = ControladorSessao.Ativo == null
       ? sessoes.FirstOrDefault(s => s.Status != StatusSessao.Finalizada)
       : null;
-    _faixa.Visible = _sessaoEmAndamento != null;
+    _faixa.Visible = _espacoFaixa.Visible = _sessaoEmAndamento != null;
     if (_sessaoEmAndamento != null)
       _lblFaixa.Text = $"Evidência em andamento: {_sessaoEmAndamento.Tarefa} — {_sessaoEmAndamento.Titulo}";
     AtualizarBotoes();
