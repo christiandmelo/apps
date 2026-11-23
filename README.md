@@ -12,11 +12,12 @@ apps-cm/
     AppsCm.Updater/             <- processo separado que aplica a atualização
   TestCoverageUI/               <- submódulo git
   git-submodule-sync/            <- submódulo git
+  TestEvidence/                  <- submódulo git
   version.json                  <- servido via raw.githubusercontent.com, checado pelo AppsCm.exe no startup
   Release.ps1                   <- script que gera uma nova versão (ver abaixo)
 ```
 
-Cada ferramenta (`TestCoverageUI`, `git-submodule-sync`) continua sendo um repositório próprio, adicionado aqui como submódulo. O `AppsCm.Shell` referencia o projeto `.UI` de cada um via `ProjectReference` e hospeda o `MainForm` deles reparenteado numa aba — não é uma cópia de código, é o mesmo projeto compilado junto.
+Cada ferramenta (`TestCoverageUI`, `git-submodule-sync`, `TestEvidence`) continua sendo um repositório próprio, adicionado aqui como submódulo. O `AppsCm.Shell` referencia o projeto `.UI` de cada um via `ProjectReference` e hospeda o `MainForm` deles reparenteado numa aba — não é uma cópia de código, é o mesmo projeto compilado junto.
 
 ## Desenvolvimento
 
@@ -30,6 +31,7 @@ Cada submódulo também continua compilando e rodando standalone (útil para des
 ```powershell
 dotnet run --project TestCoverageUI\TestCoverageUI.UI
 dotnet run --project git-submodule-sync\GitSubmoduleSync.UI
+dotnet run --project TestEvidence\TestEvidence.UI
 ```
 
 ## Publicando uma nova versão

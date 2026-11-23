@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\TestCoverageUI\TestCoverageUI.UI\TestCoverageUI.UI.csproj" />
     <ProjectReference Include="..\..\git-submodule-sync\GitSubmoduleSync.UI\GitSubmoduleSync.UI.csproj" />
+    <ProjectReference Include="..\..\TestEvidence\TestEvidence.UI\TestEvidence.UI.csproj" />
     <!-- ReferenceOutputAssembly=false: o Updater não é uma dependência de código do shell, é um
          exe standalone que precisa existir ao lado do AppsCm.exe em runtime (ver targets abaixo) -->
     <ProjectReference Include="..\AppsCm.Updater\AppsCm.Updater.csproj" ReferenceOutputAssembly="false" />
@@ -23,7 +24,7 @@
   <!-- Remove os apphosts dos módulos do publish do shell: o usuário só deve ver AppsCm.exe.
        Rodar os módulos pelo próprio exe deles pularia o path de config/updater do shell. -->
   <Target Name="RemoverAppHostsDosModulos" AfterTargets="Publish">
-    <Delete Files="$(PublishDir)TestCoverageUI.exe;$(PublishDir)GitSubmoduleSync.UI.exe" />
+    <Delete Files="$(PublishDir)TestCoverageUI.exe;$(PublishDir)GitSubmoduleSync.UI.exe;$(PublishDir)TestEvidence.exe" />
   </Target>
 
   <!-- O Updater é PublishSingleFile+RID próprio; um ProjectReference comum não copia esse

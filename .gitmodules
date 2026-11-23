@@ -4,3 +4,6 @@
 [submodule "TestCoverageUI"]
 	path = TestCoverageUI
 	url = https://github.com/christiandmelo/TestCoverageUI
+[submodule "TestEvidence"]
+	path = TestEvidence
+	url = https://github.com/christiandmelo/TestEvidence

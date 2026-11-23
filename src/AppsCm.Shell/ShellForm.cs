@@ -11,6 +11,7 @@ public partial class ShellForm : Form
   [
     new ModuloTestCoverage(),
     new ModuloGitSubmoduleSync(),
+    new ModuloTestEvidence(),
   ];
 
   private readonly TabControl _tabControl;
