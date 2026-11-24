@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Windows.Forms;
+using AppsCm.Visual;
 using TestCoverageUI.Models;
 using TestCoverageUI.Services;
 
@@ -14,7 +15,19 @@ namespace TestCoverageUI.UI
     public MainForm()
     {
       InitializeComponent();
+      AplicarTema();
       LoadConfig();
+    }
+
+    // o tema é aplicado aqui, e não no Designer, que o Visual Studio regrava
+    private void AplicarTema()
+    {
+      Tema.Aplicar(this);
+      Tema.EstilizarMenu(menuStrip);
+      Tema.EstilizarAbas(tabControl);
+      Tema.EstilizarCampo(comboProfiles);
+      Tema.EstilizarCampo(txtBinPath);
+      Tema.ComoPrimario(btnGerarRelatorio, tamanhoFixo: true);
     }
 
     private void LoadConfig()

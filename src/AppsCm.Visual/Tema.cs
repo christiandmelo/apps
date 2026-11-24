@@ -41,14 +41,16 @@ public static class Tema
   public static Button BotaoPerigo(string texto) => ComoPerigo(new Button { Text = texto });
 
   /// <summary>Estiliza um botão existente (por exemplo, criado pelo Designer) como ação principal.</summary>
-  public static Button ComoPrimario(Button b) => Estilizar(b, Primaria, Color.White, Primaria, PrimariaHover);
+  /// <param name="tamanhoFixo">Para telas do Designer com posições absolutas: mantém o tamanho definido no Designer.</param>
+  public static Button ComoPrimario(Button b, bool tamanhoFixo = false) => Estilizar(b, Primaria, Color.White, Primaria, PrimariaHover, tamanhoFixo);
 
-  public static Button ComoSecundario(Button b) => Estilizar(b, Superficie, Texto, Borda, Fundo);
+  public static Button ComoSecundario(Button b, bool tamanhoFixo = false) => Estilizar(b, Superficie, Texto, Borda, Fundo, tamanhoFixo);
 
-  public static Button ComoPerigo(Button b) => Estilizar(b, Superficie, Perigo, Borda, PerigoSuave);
+  public static Button ComoPerigo(Button b, bool tamanhoFixo = false) => Estilizar(b, Superficie, Perigo, Borda, PerigoSuave, tamanhoFixo);
 
-  private static Button Estilizar(Button b, Color fundo, Color texto, Color borda, Color hover)
+  private static Button Estilizar(Button b, Color fundo, Color texto, Color borda, Color hover, bool tamanhoFixo = false)
   {
+    var tamanho = b.Size;
     b.FlatStyle = FlatStyle.Flat;
     b.UseVisualStyleBackColor = false;
     b.FlatAppearance.BorderSize = 1;
@@ -61,6 +63,14 @@ public static class Tema
     b.Padding = new Padding(10, 0, 10, 0);
     b.Margin = new Padding(0, 0, 8, 0);
     b.Cursor = Cursors.Hand;
+    if (tamanhoFixo)
+    {
+      b.AutoSize = false;
+      b.MinimumSize = Size.Empty;
+      b.Padding = Padding.Empty;
+      b.Margin = Padding.Empty;
+      b.Size = tamanho;
+    }
 
     // o WinForms desenha botão Flat desabilitado com o texto cinza sobre a cor original
     // (cinza sobre azul fica ilegível): no desabilitado, todos viram neutros
