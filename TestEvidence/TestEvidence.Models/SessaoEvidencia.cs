@@ -4,6 +4,10 @@ public sealed class SessaoEvidencia
 {
   public string Id { get; set; } = "";              // = nome da pasta da sessão
   public string Tarefa { get; set; } = "";
+  public string ClienteId { get; set; } = "";
+  public string Cliente { get; set; } = "";         // cópia do nome no momento em que foi escolhido
+  public string ProjetoId { get; set; } = "";
+  public string Projeto { get; set; } = "";
   public string Titulo { get; set; } = "";
   public string Requisito { get; set; } = "";
   public string Cenario { get; set; } = "";

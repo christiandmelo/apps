@@ -1,3 +1,4 @@
+using AppsCm.Compartilhado;
 using AppsCm.Visual;
 using TestEvidence.Models;
 
@@ -20,9 +21,14 @@ public sealed class NovaSessaoForm : Form
     StartPosition = FormStartPosition.CenterParent;
     MaximizeBox = MinimizeBox = false;
     ShowInTaskbar = false;
-    ClientSize = new Size(640, 600);
+    ClientSize = new Size(640, 672);
 
     Dados.Testador = string.IsNullOrWhiteSpace(config.UltimoTestador) ? Environment.UserName : config.UltimoTestador;
+    if (config.UltimoClienteId.Length > 0 && CatalogoClientes.Carregar().ClientePorId(config.UltimoClienteId) is { Ativo: true } ultimo)
+    {
+      Dados.ClienteId = ultimo.Id;
+      Dados.Cliente = ultimo.Nome;
+    }
     Dados.Ambiente = config.UltimoAmbiente;
     Dados.Etapas = new List<string>(config.EtapasPadrao);
     Dados.EtapaAtual = Dados.Etapas.FirstOrDefault() ?? "Antes";
@@ -49,6 +55,7 @@ public sealed class NovaSessaoForm : Form
     _cabecalho.Aplicar(Dados);
 
     _config.UltimoTestador = Dados.Testador;
+    if (Dados.ClienteId.Length > 0) _config.UltimoClienteId = Dados.ClienteId;
     _config.UltimoAmbiente = Dados.Ambiente;
     if (Dados.Ambiente.Length > 0 && !_config.AmbientesUsados.Contains(Dados.Ambiente))
       _config.AmbientesUsados.Insert(0, Dados.Ambiente);
