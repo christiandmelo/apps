@@ -1,4 +1,5 @@
-using System.Text.Json;
+﻿using System.Text.Json;
+using AppsCm.Visual;
 using GitSubmoduleSync.Models;
 using GitSubmoduleSync.Services;
 
@@ -25,6 +26,7 @@ public partial class ConfigForm : Form
   public ConfigForm(ProfilesConfig config)
   {
     InitializeComponent();
+    AplicarTema();
     Icon = IconeApp.Obter();
     _configOriginal = config;
 
@@ -44,6 +46,21 @@ public partial class ConfigForm : Form
     btnSalvar.Click += (_, _) => Salvar();
 
     RecarregarCombo(_configOriginal.PerfilAtivo);
+  }
+
+  // o tema é aplicado aqui, e não no Designer, que o Visual Studio regrava
+  private void AplicarTema()
+  {
+    Tema.Aplicar(this);
+    foreach (Control campo in new Control[] { cboPerfil, txtNome, txtPastaRaiz, txtBranchBase, numParalelismoGit, numParalelismoBuild })
+      Tema.EstilizarCampo(campo);
+    Tema.EstilizarGrade(grid);
+    Tema.ComoPrimario(btnSalvar, tamanhoFixo: true);
+    foreach (var b in new[] { btnNovo, btnDuplicar, btnProcurar, btnLerProjetos, btnRestaurarTodos, btnCancelar })
+      Tema.ComoSecundario(b, tamanhoFixo: true);
+    Tema.ComoPerigo(btnExcluir, tamanhoFixo: true);
+    foreach (var l in new[] { lblNome, lblPastaRaiz, lblBranchBase, lblParalelismoGit, lblParalelismoBuild })
+      l.ForeColor = Tema.TextoSecundario;
   }
 
   // ==================== Perfis ====================
