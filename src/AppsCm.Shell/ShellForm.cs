@@ -2,6 +2,7 @@ using System.Drawing;
 using AppsCm.Shell.Atualizacao;
 using AppsCm.Shell.Contratos;
 using AppsCm.Shell.Modulos;
+using AppsCm.Visual;
 
 namespace AppsCm.Shell;
 
@@ -42,10 +43,14 @@ public partial class ShellForm : Form
         _iconesModulos.Images.Add(modulo.Id, icone);
     }
 
+    Tema.Aplicar(this);
+
     _tabControl = new TabControl { Dock = DockStyle.Fill, ImageList = _iconesModulos };
+    Tema.EstilizarAbas(_tabControl);
     _tabControl.TabPages.Add(CriarAbaApps());
 
     _menuContextoAba = new ContextMenuStrip();
+    Tema.EstilizarMenu(_menuContextoAba);
     var itemFechar = new ToolStripMenuItem("Fechar aba");
     itemFechar.Click += (_, _) =>
     {
@@ -69,7 +74,8 @@ public partial class ShellForm : Form
     {
       Dock = DockStyle.Fill,
       AutoScroll = true,
-      Padding = new Padding(16),
+      Padding = new Padding(20, 16, 20, 16),
+      BackColor = Tema.Fundo,
     };
 
     foreach (var modulo in Modulos)
@@ -82,12 +88,11 @@ public partial class ShellForm : Form
   {
     const int ladoIcone = 56;
 
-    var tile = new Panel
+    var tile = new Cartao
     {
       Size = new Size(150, 160),
-      Margin = new Padding(8),
+      Margin = new Padding(0, 0, 16, 16),
       Cursor = Cursors.Hand,
-      BorderStyle = BorderStyle.FixedSingle,
     };
 
     var imagem = new PictureBox
@@ -106,6 +111,8 @@ public partial class ShellForm : Form
       Location = new Point(4, ladoIcone + 26),
       Size = new Size(tile.Width - 8, 60),
       Cursor = Cursors.Hand,
+      Font = Tema.FonteSemibold,
+      BackColor = Color.Transparent,
     };
 
     tile.Controls.Add(imagem);
@@ -116,8 +123,8 @@ public partial class ShellForm : Form
     imagem.Click += AoClicar;
     nome.Click += AoClicar;
 
-    void AoEntrar(object? s, EventArgs e) => tile.BackColor = SystemColors.ControlLight;
-    void AoSair(object? s, EventArgs e) => tile.BackColor = SystemColors.Control;
+    void AoEntrar(object? s, EventArgs e) => tile.BackColor = Tema.PrimariaSuave;
+    void AoSair(object? s, EventArgs e) => tile.BackColor = Tema.Superficie;
     tile.MouseEnter += AoEntrar;
     tile.MouseLeave += AoSair;
     imagem.MouseEnter += AoEntrar;

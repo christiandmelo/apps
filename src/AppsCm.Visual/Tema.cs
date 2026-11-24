@@ -133,7 +133,15 @@ public static class Tema
       var ativa = e.Index == abas.SelectedIndex;
       using (var fundo = new SolidBrush(Fundo)) e.Graphics.FillRectangle(fundo, e.Bounds);
       var texto = ativa ? Primaria : TextoSecundario;
-      TextRenderer.DrawText(e.Graphics, abas.TabPages[e.Index].Text, ativa ? FonteSemibold : Fonte, e.Bounds, texto,
+      var pagina = abas.TabPages[e.Index];
+      var area = e.Bounds;
+      if (abas.ImageList is { } imagens && !string.IsNullOrEmpty(pagina.ImageKey) && imagens.Images.ContainsKey(pagina.ImageKey))
+      {
+        var img = imagens.Images[pagina.ImageKey];
+        e.Graphics.DrawImage(img, area.Left + 8, area.Top + (area.Height - img.Height) / 2, img.Width, img.Height);
+        area = new Rectangle(area.Left + 8 + img.Width, area.Top, area.Width - 8 - img.Width, area.Height);
+      }
+      TextRenderer.DrawText(e.Graphics, pagina.Text, ativa ? FonteSemibold : Fonte, area, texto,
         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
       if (ativa)
       {
