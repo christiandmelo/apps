@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <StartupObject>TestCoverageUI.UI.Program</StartupObject>
+    <PackageIcon>Icone_Logo_png.png</PackageIcon>
+    <AssemblyName>TestCoverageUI</AssemblyName>
+    <ApplicationIcon>Resources\Icone_Logo_ico.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RaizRepo>$(MSBuildThisFileDirectory)..\</RaizRepo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Icone_Logo_ico.ico" />
+
+    <!-- OpenCover e ReportGenerator embutidos, e uma c�pia solta do �cone; versionados aqui e
+         copiados automaticamente para bin/publish, sem precisar de passo manual de empacotamento -->
+    <None Include="Tools\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Resources\Icone_Logo_ico.ico" Link="Icone\Icone_Logo_ico.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestCoverageUI.Models\TestCoverageUI.Models.csproj" />
+    <ProjectReference Include="..\TestCoverageUI.Services\TestCoverageUI.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\Icone_Logo_png.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <!-- Builda o Preloader (net472, sem publish/RID pois roda sob o profiler do OpenCover) antes do
+       build principal, e inclui o exe resultante como item din�mico. Precisa ser BeforeTargets
+       AssignTargetPaths (n�o um ItemGroup est�tico) para que o arquivo j� exista quando o glob for
+       avaliado, e para que flua transitivamente a quem referenciar este projeto (ex.: o shell). -->
+  <Target Name="CompilarPreloader" BeforeTargets="PrepareForBuild">
+    <Exec Command="dotnet build &quot;$(RaizRepo)TestCoverageUI.Preloader\TestCoverageUI.Preloader.csproj&quot; -c $(Configuration)" />
+  </Target>
+
+  <Target Name="IncluirPreloaderNaSaida" BeforeTargets="AssignTargetPaths" DependsOnTargets="CompilarPreloader">
+    <ItemGroup>
+      <None Include="$(RaizRepo)TestCoverageUI.Preloader\bin\$(Configuration)\net472\Preloader.exe">
+        <Link>Preloader.exe</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+  </Target>
+
+</Project>
