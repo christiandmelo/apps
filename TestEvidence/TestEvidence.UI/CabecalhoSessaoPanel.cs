@@ -1,3 +1,4 @@
+using AppsCm.Visual;
 using TestEvidence.Models;
 
 namespace TestEvidence.UI;
@@ -18,8 +19,8 @@ public sealed class CabecalhoSessaoPanel : TableLayoutPanel
     ColumnCount = 2;
     Dock = DockStyle.Top;
     AutoSize = true;
-    Padding = new Padding(8);
-    ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+    Padding = Padding.Empty;
+    ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
     ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
     Linha("Tarefa *", _tarefa, 26);
@@ -46,8 +47,13 @@ public sealed class CabecalhoSessaoPanel : TableLayoutPanel
 
   private void Linha(string rotulo, Control campo, int altura)
   {
-    RowStyles.Add(new RowStyle(SizeType.Absolute, altura + 6));
-    Controls.Add(new Label { Text = rotulo, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+    RowStyles.Add(new RowStyle(SizeType.Absolute, altura + 10));
+    var lbl = Tema.Rotulo(rotulo);
+    lbl.AutoSize = false;
+    lbl.Dock = DockStyle.Fill;
+    lbl.TextAlign = ContentAlignment.MiddleLeft;
+    Tema.EstilizarCampo(campo);
+    Controls.Add(lbl);
     Controls.Add(campo);
   }
 

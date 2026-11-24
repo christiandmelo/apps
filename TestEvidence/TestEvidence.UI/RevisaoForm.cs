@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AppsCm.Visual;
 using TestEvidence.Models;
 using TestEvidence.Services;
 
@@ -21,7 +22,8 @@ public sealed class RevisaoForm : Form
     Dock = DockStyle.Fill,
     FlowDirection = FlowDirection.TopDown,
     WrapContents = false,
-    AutoScroll = true
+    AutoScroll = true,
+    Padding = new Padding(0, 8, 20, 8)
   };
   private readonly List<Image> _miniaturas = new();
   private bool _reconstruindo;
@@ -38,6 +40,7 @@ public sealed class RevisaoForm : Form
     StartPosition = FormStartPosition.CenterScreen;
     ClientSize = new Size(1100, 720);
     MinimumSize = new Size(900, 520);
+    Tema.Aplicar(this);
 
     _cabecalho.Carregar(sessao, config.AmbientesUsados);
     _rbAprovado.Checked = sessao.Resultado == ResultadoTeste.Aprovado;
@@ -53,21 +56,27 @@ public sealed class RevisaoForm : Form
     var obs = new GroupBox { Text = "Observações", Dock = DockStyle.Fill, Padding = new Padding(6) };
     obs.Controls.Add(_observacoes);
 
-    var esquerda = new Panel { Dock = DockStyle.Left, Width = 440 };
-    var topoEsquerda = new Panel { Dock = DockStyle.Top, Height = 410 };
+    var esquerda = new Panel { Dock = DockStyle.Left, Width = 520, Padding = new Padding(20, 16, 8, 16) };
+    var topoEsquerda = new Panel { Dock = DockStyle.Top, Height = 440 };
     topoEsquerda.Controls.Add(_cabecalho);
     esquerda.Controls.Add(obs);
     esquerda.Controls.Add(resultado);
     esquerda.Controls.Add(topoEsquerda);
 
-    var btnVoltar = new Button { Text = "Voltar a evidenciar", Width = 140, Left = 8, Top = 10 };
-    var btnSalvar = new Button { Text = "Salvar", Width = 90, Left = 800, Top = 10, Anchor = AnchorStyles.Top | AnchorStyles.Right };
-    var btnGerar = new Button { Text = "Gerar documento", Width = 140, Left = 900, Top = 10, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+    var btnVoltar = Tema.BotaoSecundario("Voltar a evidenciar");
+    var btnSalvar = Tema.BotaoSecundario("Salvar");
+    var btnGerar = Tema.BotaoPrimario("Gerar documento");
+    btnGerar.Margin = Padding.Empty;
     btnVoltar.Click += (_, _) => VoltarAEvidenciar();
     btnSalvar.Click += (_, _) => { SalvarTudo(); MessageBox.Show(this, "Sessão salva.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information); };
     btnGerar.Click += (_, _) => GerarDocumento();
-    var rodape = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-    rodape.Controls.AddRange(new Control[] { btnVoltar, btnSalvar, btnGerar });
+    var rodape = new FaixaComBorda { BordaEmCima = true, Dock = DockStyle.Bottom, Height = 62, Padding = new Padding(20, 14, 20, 0) };
+    var botoesDireita = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, WrapContents = false, BackColor = Tema.Superficie };
+    botoesDireita.Controls.AddRange(new Control[] { btnSalvar, btnGerar });
+    var botoesEsquerda = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, BackColor = Tema.Superficie };
+    botoesEsquerda.Controls.Add(btnVoltar);
+    rodape.Controls.Add(botoesEsquerda);
+    rodape.Controls.Add(botoesDireita);
 
     Controls.Add(_lista);
     Controls.Add(esquerda);
@@ -142,7 +151,7 @@ public sealed class RevisaoForm : Form
       _lista.Controls.Add(new Label
       {
         Text = etapa,
-        Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+        Font = Tema.FonteSemibold,
         AutoSize = true,
         Margin = new Padding(4, 10, 0, 4)
       });
@@ -167,13 +176,14 @@ public sealed class RevisaoForm : Form
 
   private Control CriarItem(Evidencia ev, List<Evidencia> grupo, List<string> etapas)
   {
-    var painel = new Panel { Height = 124, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(4, 2, 4, 4) };
+    var painel = new Cartao { Height = 128, Margin = new Padding(0, 2, 0, 8) };
 
     var figura = new PictureBox
     {
-      Left = 4, Top = 4, Width = 176, Height = 112,
+      Left = 8, Top = 8, Width = 176, Height = 112,
       SizeMode = PictureBoxSizeMode.Zoom,
-      BorderStyle = BorderStyle.FixedSingle,
+      BorderStyle = BorderStyle.None,
+      BackColor = Tema.Fundo,
       Cursor = Cursors.Hand
     };
     var arquivo = _repo.CaminhoImagem(_sessao, ev);
@@ -181,7 +191,8 @@ public sealed class RevisaoForm : Form
     if (miniatura != null) { figura.Image = miniatura; _miniaturas.Add(miniatura); }
     figura.DoubleClick += (_, _) => AbrirArquivo(arquivo);
 
-    var cboEtapa = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Left = 188, Top = 6, Width = 150 };
+    var cboEtapa = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Left = 196, Top = 8, Width = 150 };
+    Tema.EstilizarCampo(cboEtapa);
     cboEtapa.Items.AddRange(etapas.Cast<object>().ToArray());
     cboEtapa.SelectedItem = ev.Etapa;
     cboEtapa.SelectedIndexChanged += (_, _) =>
@@ -193,30 +204,46 @@ public sealed class RevisaoForm : Form
       BeginInvoke(Reconstruir);
     };
 
-    var lblHora = new Label { Left = 346, Top = 9, AutoSize = true, Text = $"{ev.CapturadoEm:dd/MM HH:mm:ss}" };
+    var lblHora = Tema.Rotulo($"{ev.CapturadoEm:dd/MM HH:mm:ss}");
+    lblHora.Left = 356; lblHora.Top = 13;
 
     var idx = grupo.IndexOf(ev);
-    var btnSobe = new Button { Text = "↑", Width = 30, Left = 188, Top = 36, Enabled = idx > 0 };
-    var btnDesce = new Button { Text = "↓", Width = 30, Left = 222, Top = 36, Enabled = idx < grupo.Count - 1 };
-    var btnExcluir = new Button { Text = "Excluir", Width = 70, Left = 258, Top = 36 };
+    var btnSobe = PequenoSecundario("↑", 196, 42); btnSobe.Enabled = idx > 0;
+    var btnDesce = PequenoSecundario("↓", 236, 42); btnDesce.Enabled = idx < grupo.Count - 1;
+    var btnExcluir = Tema.BotaoPerigo("Excluir");
+    btnExcluir.AutoSize = false; btnExcluir.Size = new Size(76, 30); btnExcluir.MinimumSize = Size.Empty;
+    btnExcluir.Location = new Point(280, 42);
     btnSobe.Click += (_, _) => Mover(grupo, idx, -1);
     btnDesce.Click += (_, _) => Mover(grupo, idx, +1);
     btnExcluir.Click += (_, _) => Excluir(ev);
 
     var txtLegenda = new TextBox
     {
-      Left = 188, Top = 68, Height = 48,
+      Left = 196, Top = 78, Height = 42,
       Multiline = true, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true,
       Text = ev.Legenda,
       Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
     };
     txtLegenda.TextChanged += (_, _) => ev.Legenda = txtLegenda.Text.Trim();
-    painel.Resize += (_, _) => txtLegenda.Width = Math.Max(100, painel.ClientSize.Width - 196);
+    Tema.EstilizarCampo(txtLegenda);
+    txtLegenda.MinimumSize = new Size(0, 42);
+    painel.Resize += (_, _) => txtLegenda.Width = Math.Max(100, painel.ClientSize.Width - 196 - 8);
 
     painel.Controls.AddRange(new Control[] { figura, cboEtapa, lblHora, btnSobe, btnDesce, btnExcluir, txtLegenda });
     painel.Width = 700;
     txtLegenda.Width = 500;
     return painel;
+  }
+
+  private static Button PequenoSecundario(string texto, int x, int y)
+  {
+    var b = Tema.BotaoSecundario(texto);
+    b.AutoSize = false;
+    b.MinimumSize = Size.Empty;
+    b.Size = new Size(32, 30);
+    b.Padding = Padding.Empty;
+    b.Location = new Point(x, y);
+    return b;
   }
 
   private void Mover(List<Evidencia> grupo, int idx, int delta)

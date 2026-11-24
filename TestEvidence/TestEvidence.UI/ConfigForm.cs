@@ -1,3 +1,4 @@
+﻿using AppsCm.Visual;
 using TestEvidence.Models;
 using TestEvidence.Services;
 using TestEvidence.Services.Nativo;
@@ -23,7 +24,7 @@ public sealed class ConfigForm : Form
     StartPosition = FormStartPosition.CenterParent;
     MaximizeBox = MinimizeBox = false;
     ShowInTaskbar = false;
-    ClientSize = new Size(520, 360);
+    ClientSize = new Size(640, 430);
 
     _atalhoEvidenciar.Text = config.AtalhoEvidenciar;
     _atalhoRepetir.Text = config.AtalhoRepetirRegiao;
@@ -32,24 +33,31 @@ public sealed class ConfigForm : Form
     _pasta.Text = config.PastaSaidaDocumentos;
     _etapas.Text = string.Join(Environment.NewLine, config.EtapasPadrao);
 
-    var testar = new Button { Text = "Testar", Dock = DockStyle.Fill };
+    var testar = Tema.BotaoSecundario("Testar");
+    testar.Dock = DockStyle.Fill;
     testar.Click += (_, _) => TestarAtalhos();
-    var procurar = new Button { Text = "...", Dock = DockStyle.Fill };
+    var procurar = Tema.BotaoSecundario("...");
+    procurar.Dock = DockStyle.Fill;
     procurar.Click += (_, _) =>
     {
       using var dlg = new FolderBrowserDialog { SelectedPath = _config.PastaSaidaEfetiva };
       if (dlg.ShowDialog(this) == DialogResult.OK) _pasta.Text = dlg.SelectedPath;
     };
 
-    var grade = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 3, AutoSize = true, Padding = new Padding(8) };
+    var grade = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 3, AutoSize = true, Padding = Padding.Empty };
     grade.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
     grade.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
     grade.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
 
     void Linha(string rotulo, Control campo, Control? extra, int altura = 28)
     {
-      grade.RowStyles.Add(new RowStyle(SizeType.Absolute, altura));
-      grade.Controls.Add(new Label { Text = rotulo, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+      grade.RowStyles.Add(new RowStyle(SizeType.Absolute, altura + 8));
+      var lbl = Tema.Rotulo(rotulo);
+      lbl.AutoSize = false;
+      lbl.Dock = DockStyle.Fill;
+      lbl.TextAlign = ContentAlignment.MiddleLeft;
+      Tema.EstilizarCampo(campo);
+      grade.Controls.Add(lbl);
       grade.Controls.Add(campo);
       grade.Controls.Add(extra ?? new Label());
     }
@@ -61,16 +69,15 @@ public sealed class ConfigForm : Form
     Linha("", _chkLegenda, null);
     Linha("", _chkMinimizar, null);
 
-    var salvar = new Button { Text = "Salvar", Width = 90, Left = 320, Top = 10 };
-    var cancelar = new Button { Text = "Cancelar", DialogResult = DialogResult.Cancel, Width = 90, Left = 418, Top = 10 };
+    var salvar = Tema.BotaoPrimario("Salvar");
+    var cancelar = Tema.BotaoSecundario("Cancelar");
+    cancelar.DialogResult = DialogResult.Cancel;
     salvar.Click += (_, _) => Salvar();
-    var rodape = new Panel { Dock = DockStyle.Bottom, Height = 46 };
-    rodape.Controls.Add(salvar);
-    rodape.Controls.Add(cancelar);
 
-    Controls.Add(grade);
-    Controls.Add(rodape);
-    CancelButton = cancelar;
+    var corpo = new Panel();
+    corpo.Controls.Add(grade);
+    Tema.Dialogo(this, corpo, salvar, cancelar);
+    AcceptButton = null;   // campo de etapas é multilinha
   }
 
   private bool Validar()

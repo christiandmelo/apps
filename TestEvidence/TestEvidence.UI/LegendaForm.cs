@@ -1,3 +1,5 @@
+using AppsCm.Visual;
+
 namespace TestEvidence.UI;
 
 public sealed class LegendaForm : Form
@@ -22,17 +24,20 @@ public sealed class LegendaForm : Form
     StartPosition = FormStartPosition.Manual;
     TopMost = true;
     ShowInTaskbar = false;
-    ClientSize = new Size(560, 170);
+    ClientSize = new Size(600, 190);
+    Tema.Aplicar(this);
 
     var miniatura = new PictureBox
     {
       Dock = DockStyle.Left,
       Width = 220,
       SizeMode = PictureBoxSizeMode.Zoom,
-      BorderStyle = BorderStyle.FixedSingle,
+      BorderStyle = BorderStyle.None,
       Image = CriarMiniatura(print, 220, 150)
     };
 
+    Tema.EstilizarCampo(_cboEtapa);
+    Tema.EstilizarCampo(_txtLegenda);
     _cboEtapa.Items.AddRange(etapas.Cast<object>().ToArray());
     _cboEtapa.Text = etapaAtual;
     if (_cboEtapa.SelectedIndex < 0 && _cboEtapa.Items.Count > 0) _cboEtapa.SelectedIndex = 0;
@@ -41,18 +46,21 @@ public sealed class LegendaForm : Form
     {
       Dock = DockStyle.Bottom,
       Height = 40,
-      ForeColor = SystemColors.GrayText,
+      ForeColor = Tema.TextoSecundario,
       Text = "Enter salva • Shift+Enter quebra linha • Esc salva sem legenda"
     };
-    var descartar = new Button { Text = "Descartar", Dock = DockStyle.Left, Width = 110 };
+    var descartar = Tema.BotaoPerigo("Descartar");
+    descartar.Dock = DockStyle.Left;
     descartar.Click += (_, _) => { Descartado = true; DialogResult = DialogResult.Cancel; };
-    var salvar = new Button { Text = "Salvar", Dock = DockStyle.Right, Width = 110 };
+    var salvar = Tema.BotaoPrimario("Salvar");
+    salvar.Dock = DockStyle.Right;
+    salvar.Margin = Padding.Empty;
     salvar.Click += (_, _) => DialogResult = DialogResult.OK;
-    var botoes = new Panel { Dock = DockStyle.Bottom, Height = 30 };
+    var botoes = new Panel { Dock = DockStyle.Bottom, Height = 34 };
     botoes.Controls.Add(salvar);
     botoes.Controls.Add(descartar);
 
-    var direita = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 4, 4, 4) };
+    var direita = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 4, 0, 4) };
     direita.Controls.Add(_txtLegenda);
     direita.Controls.Add(dica);
     direita.Controls.Add(botoes);
