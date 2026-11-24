@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TestEvidence.Services\TestEvidence.Services.csproj" />
     <ProjectReference Include="..\TestEvidence.Models\TestEvidence.Models.csproj" />
+    <ProjectReference Include="..\..\src\AppsCm.Visual\AppsCm.Visual.csproj" />
   </ItemGroup>
 
   <ItemGroup>

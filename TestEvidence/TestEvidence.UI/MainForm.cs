@@ -1,7 +1,7 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using TestEvidence.Models;
 using TestEvidence.Services;
-using TestEvidence.UI.Visual;
+using AppsCm.Visual;
 
 namespace TestEvidence.UI;
 
@@ -29,13 +29,13 @@ public sealed class MainForm : Form
     TextAlign = ContentAlignment.MiddleCenter,
     ForeColor = Tema.TextoSecundario,
     BackColor = Tema.Superficie,
-    Text = "Nenhuma evidência ainda.\nClique em \"Nova evidência\" para começar.",
+    Text = "Nenhuma evidÃªncia ainda.\nClique em \"Nova evidÃªncia\" para comeÃ§ar.",
     Visible = false
   };
   private readonly Label _lblSubtitulo = new() { AutoSize = true, ForeColor = Tema.TextoSecundario, Location = new Point(21, 44) };
-  private readonly Button _btnNova = Tema.BotaoPrimario("+ Nova evidência");
-  private readonly Button _btnConfig = Tema.BotaoSecundario("Configurações");
-  private readonly Button _btnRevisao = Tema.BotaoSecundario("Abrir revisão");
+  private readonly Button _btnNova = Tema.BotaoPrimario("+ Nova evidÃªncia");
+  private readonly Button _btnConfig = Tema.BotaoSecundario("ConfiguraÃ§Ãµes");
+  private readonly Button _btnRevisao = Tema.BotaoSecundario("Abrir revisÃ£o");
   private readonly Button _btnRetomar = Tema.BotaoSecundario("Retomar");
   private readonly Button _btnGerar = Tema.BotaoSecundario("Gerar documento");
   private readonly Button _btnAbrirDoc = Tema.BotaoSecundario("Abrir documento");
@@ -43,14 +43,14 @@ public sealed class MainForm : Form
   private readonly Button _btnExcluir = Tema.BotaoPerigo("Excluir");
   private SessaoEvidencia? _sessaoEmAndamento;
 
-  /// <summary>True enquanto existe uma evidência ativa (barra flutuante aberta) — usado pelo shell ao fechar a aba.</summary>
+  /// <summary>True enquanto existe uma evidÃªncia ativa (barra flutuante aberta) â€” usado pelo shell ao fechar a aba.</summary>
   public bool EmSessaoAtiva => ControladorSessao.Ativo != null;
 
   private IWin32Window Dono => (IWin32Window?)ParentForm ?? this;
 
   public MainForm()
   {
-    Text = "Evidência de Teste";
+    Text = "EvidÃªncia de Teste";
     Icon = IconeApp.Obter();
     ClientSize = new Size(1000, 620);
     MinimumSize = new Size(760, 440);
@@ -58,16 +58,16 @@ public sealed class MainForm : Form
     Tema.Aplicar(this);
 
     _lista.Columns.Add("Tarefa", 130);
-    _lista.Columns.Add("Título", 300);
-    _lista.Columns.Add("Início", 130);
+    _lista.Columns.Add("TÃ­tulo", 300);
+    _lista.Columns.Add("InÃ­cio", 130);
     _lista.Columns.Add("Prints", 70);
     _lista.Columns.Add("Resultado", 120);
     _lista.Columns.Add("Status", 110);
     Tema.EstilizarLista(_lista);
 
-    // cabeçalho: título + resumo à esquerda, ações principais à direita
+    // cabeÃ§alho: tÃ­tulo + resumo Ã  esquerda, aÃ§Ãµes principais Ã  direita
     var cabecalho = new FaixaComBorda { Dock = DockStyle.Top, Height = 76, Padding = new Padding(20, 0, 20, 0) };
-    var titulo = new Label { Text = "Evidências de teste", Font = Tema.FonteTitulo, AutoSize = true, Location = new Point(18, 12) };
+    var titulo = new Label { Text = "EvidÃªncias de teste", Font = Tema.FonteTitulo, AutoSize = true, Location = new Point(18, 12) };
     var botoesTopo = new FlowLayoutPanel
     {
       Dock = DockStyle.Right,
@@ -82,7 +82,7 @@ public sealed class MainForm : Form
     cabecalho.Controls.Add(_lblSubtitulo);
     cabecalho.Controls.Add(botoesTopo);
 
-    // corpo: aviso de evidência em andamento + cartão com a lista
+    // corpo: aviso de evidÃªncia em andamento + cartÃ£o com a lista
     _btnRetomarFaixa.Dock = DockStyle.Right;
     _btnRetomarFaixa.Margin = Padding.Empty;
     _faixa.Controls.Add(_lblFaixa);
@@ -98,7 +98,7 @@ public sealed class MainForm : Form
     corpo.Controls.Add(_espacoFaixa);
     corpo.Controls.Add(_faixa);
 
-    // rodapé: ações da evidência selecionada; Excluir separado à direita
+    // rodapÃ©: aÃ§Ãµes da evidÃªncia selecionada; Excluir separado Ã  direita
     var rodape = new FaixaComBorda { BordaEmCima = true, Dock = DockStyle.Bottom, Height = 62, Padding = new Padding(20, 14, 20, 0) };
     var acoes = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, BackColor = Tema.Superficie };
     acoes.Controls.AddRange(new Control[] { _btnRevisao, _btnRetomar, _btnGerar, _btnAbrirDoc, _btnAbrirPasta });
@@ -109,7 +109,7 @@ public sealed class MainForm : Form
     rodape.Controls.Add(acoesPerigo);
 
     var menu = new ContextMenuStrip();
-    menu.Items.Add("Abrir revisão", null, (_, _) => AbrirRevisao());
+    menu.Items.Add("Abrir revisÃ£o", null, (_, _) => AbrirRevisao());
     menu.Items.Add("Retomar", null, (_, _) => Retomar(Selecionada));
     menu.Items.Add("Gerar documento", null, (_, _) => GerarDocumento());
     menu.Items.Add("Abrir documento", null, (_, _) => AbrirDocumento());
@@ -139,7 +139,7 @@ public sealed class MainForm : Form
     FormClosed += AoFechar;
   }
 
-  // Sob o shell o Program.Main nunca roda: a inicialização vive aqui, de forma idempotente
+  // Sob o shell o Program.Main nunca roda: a inicializaÃ§Ã£o vive aqui, de forma idempotente
   public void Inicializar()
   {
     if (_inicializado) return;
@@ -159,7 +159,7 @@ public sealed class MainForm : Form
   private void AoFechar(object? sender, FormClosedEventArgs e)
   {
     ControladorSessao.EstadoMudou -= AoEstadoMudar;
-    // fechar a aba não pode deixar a barra órfã: a sessão fica Pausada em disco
+    // fechar a aba nÃ£o pode deixar a barra Ã³rfÃ£: a sessÃ£o fica Pausada em disco
     ControladorSessao.Ativo?.Encerrar();
   }
 
@@ -200,15 +200,15 @@ public sealed class MainForm : Form
     _lista.EndUpdate();
     _vazio.Visible = sessoes.Count == 0;
     var abertas = sessoes.Count(x => x.Status != StatusSessao.Finalizada);
-    _lblSubtitulo.Text = sessoes.Count == 0 ? "Nenhuma evidência registrada"
-      : $"{sessoes.Count} {(sessoes.Count == 1 ? "evidência" : "evidências")}" + (abertas > 0 ? $" · {abertas} em aberto" : "");
+    _lblSubtitulo.Text = sessoes.Count == 0 ? "Nenhuma evidÃªncia registrada"
+      : $"{sessoes.Count} {(sessoes.Count == 1 ? "evidÃªncia" : "evidÃªncias")}" + (abertas > 0 ? $" Â· {abertas} em aberto" : "");
 
     _sessaoEmAndamento = ControladorSessao.Ativo == null
       ? sessoes.FirstOrDefault(s => s.Status != StatusSessao.Finalizada)
       : null;
     _faixa.Visible = _espacoFaixa.Visible = _sessaoEmAndamento != null;
     if (_sessaoEmAndamento != null)
-      _lblFaixa.Text = $"Evidência em andamento: {_sessaoEmAndamento.Tarefa} — {_sessaoEmAndamento.Titulo}";
+      _lblFaixa.Text = $"EvidÃªncia em andamento: {_sessaoEmAndamento.Tarefa} â€” {_sessaoEmAndamento.Titulo}";
     AtualizarBotoes();
   }
 
@@ -239,7 +239,7 @@ public sealed class MainForm : Form
     }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     {
-      MessageBox.Show(Dono, $"Não foi possível criar a sessão: {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+      MessageBox.Show(Dono, $"NÃ£o foi possÃ­vel criar a sessÃ£o: {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
   }
 
@@ -285,7 +285,7 @@ public sealed class MainForm : Form
   private void Excluir()
   {
     if (Selecionada is not { } s) return;
-    if (MessageBox.Show(Dono, $"Excluir a evidência {s.Tarefa} e todos os prints? (vai para a Lixeira)", Text,
+    if (MessageBox.Show(Dono, $"Excluir a evidÃªncia {s.Tarefa} e todos os prints? (vai para a Lixeira)", Text,
           MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
     try
     {
@@ -293,7 +293,7 @@ public sealed class MainForm : Form
     }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     {
-      MessageBox.Show(Dono, $"Não foi possível excluir: {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+      MessageBox.Show(Dono, $"NÃ£o foi possÃ­vel excluir: {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
     Atualizar();
   }
