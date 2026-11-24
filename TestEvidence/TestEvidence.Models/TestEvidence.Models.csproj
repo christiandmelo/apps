@@ -1,7 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- windows: o catálogo compartilhado (AppsCm.Compartilhado) usa DPAPI -->
+    <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AppsCm.Compartilhado\AppsCm.Compartilhado.csproj" />
+  </ItemGroup>
 
 </Project>

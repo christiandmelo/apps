@@ -57,7 +57,7 @@ public sealed class RevisaoForm : Form
     obs.Controls.Add(_observacoes);
 
     var esquerda = new Panel { Dock = DockStyle.Left, Width = 520, Padding = new Padding(20, 16, 8, 16) };
-    var topoEsquerda = new Panel { Dock = DockStyle.Top, Height = 440 };
+    var topoEsquerda = new Panel { Dock = DockStyle.Top, Height = 512 };
     topoEsquerda.Controls.Add(_cabecalho);
     esquerda.Controls.Add(obs);
     esquerda.Controls.Add(resultado);

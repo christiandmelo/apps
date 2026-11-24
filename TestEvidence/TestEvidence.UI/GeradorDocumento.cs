@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using AppsCm.Compartilhado;
 using TestEvidence.Models;
 using TestEvidence.Services;
 
@@ -19,12 +20,16 @@ internal static class GeradorDocumento
     try { Directory.CreateDirectory(pasta); }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { pasta = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments); }
 
-    var nomeTarefa = string.Concat(sessao.Tarefa.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+    static string Sanitizar(string texto) => string.Concat(texto.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+    var nomeTarefa = Sanitizar(sessao.Tarefa);
+    var nomeCliente = Sanitizar(VinculoCatalogo.Nomes(sessao, CatalogoClientes.Carregar()).cliente);
     using var dlg = new SaveFileDialog
     {
       Filter = "Documento Word (*.docx)|*.docx",
       InitialDirectory = pasta,
-      FileName = $"Evidencia_{nomeTarefa}_{DateTime.Now:yyyyMMdd}.docx"
+      FileName = nomeCliente.Length > 0
+        ? $"Evidencia_{nomeCliente}_{nomeTarefa}_{DateTime.Now:yyyyMMdd}.docx"
+        : $"Evidencia_{nomeTarefa}_{DateTime.Now:yyyyMMdd}.docx"
     };
     if (dlg.ShowDialog(dono) != DialogResult.OK) return false;
 

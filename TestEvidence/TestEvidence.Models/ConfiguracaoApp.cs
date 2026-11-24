@@ -14,6 +14,9 @@ public sealed class ConfiguracaoApp
   public List<string> AmbientesUsados { get; set; } = new();
   public List<string> EtapasPadrao { get; set; } = new() { "Antes", "Execução", "Resultado" };
   public PosicaoTela? PosicaoBarra { get; set; }
+  public bool AgruparLista { get; set; } = true;
+  public FiltroLista Filtro { get; set; } = new();
+  public string UltimoClienteId { get; set; } = "";
 
   private static readonly JsonSerializerOptions Opcoes = new() { WriteIndented = true };
 
@@ -31,6 +34,7 @@ public sealed class ConfiguracaoApp
         if (cfg != null)
         {
           if (cfg.EtapasPadrao.Count == 0) cfg.EtapasPadrao = new() { "Antes", "Execução", "Resultado" };
+          cfg.Filtro ??= new();
           return cfg;
         }
       }

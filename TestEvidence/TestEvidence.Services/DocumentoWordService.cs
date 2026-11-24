@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml;
+using AppsCm.Compartilhado;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using A = DocumentFormat.OpenXml.Drawing;
@@ -148,6 +149,9 @@ public sealed class DocumentoWordService
     }
 
     Linha("Tarefa", sessao.Tarefa);
+    var (cliente, projeto) = VinculoCatalogo.Nomes(sessao, CatalogoClientes.Carregar());
+    if (cliente.Length > 0) Linha("Cliente", cliente);
+    if (projeto.Length > 0) Linha("Projeto", projeto);
     Linha("Título", sessao.Titulo);
     Linha("Requisito", sessao.Requisito);
     Linha("Cenário", sessao.Cenario);

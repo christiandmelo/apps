@@ -36,6 +36,7 @@ public sealed class SessaoRepository
 
   public void Salvar(SessaoEvidencia sessao)
   {
+    VinculoCatalogo.Sincronizar(sessao);
     var pasta = PastaDa(sessao);
     Directory.CreateDirectory(pasta);
     var arquivo = Path.Combine(pasta, "sessao.json");
