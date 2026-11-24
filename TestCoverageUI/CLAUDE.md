@@ -8,7 +8,7 @@ Uma interface desktop em Windows Forms (.NET 8) para rodar cobertura de testes .
 
 O projeto não é uma biblioteca — ele orquestra executáveis externos via `Process`. A maior parte dos bugs está na montagem das strings de argumento e na resolução de caminhos, não no C#.
 
-Este repositório é um **submódulo do [apps-cm](https://github.com/christiandmelo/apps)**, o shell que centraliza e distribui todas as ferramentas do time. Ele continua compilando e rodando standalone (útil para desenvolvimento), mas o executável distribuído aos usuários finais é o `AppsCm.exe` do apps-cm, que hospeda o `MainForm` deste projeto reparenteado dentro de uma aba.
+Este projeto é uma **pasta do repositório [apps-cm](https://github.com/christiandmelo/apps)**, o shell que centraliza e distribui todas as ferramentas do time. Ele continua compilando e rodando standalone (útil para desenvolvimento), mas o executável distribuído aos usuários finais é o `AppsCm.exe` do apps-cm, que hospeda o `MainForm` deste projeto reparenteado dentro de uma aba.
 
 ## Comandos
 
@@ -54,7 +54,7 @@ Não existe mais neste repositório. Antes o `TestCoverageUI.Updater` e o `Updat
 
 ### Versionamento
 
-A versão vem de um único `Directory.Build.props` na raiz deste repositório (`<Version>`/`<AssemblyVersion>`/`<FileVersion>`), aplicado a todos os projetos automaticamente — não precisa mais ser duplicada manualmente em cada `.csproj` (esse era o bug antigo: o `VersionHelper` do updater lia a versão do assembly *Services*, que podia ficar dessincronizada da versão do assembly *UI*). Essa versão identifica apenas este submódulo (aparece, por exemplo, no título de janela ou em logs) — ela não é comparada com nada; quem decide se há atualização disponível é o shell, comparando a versão *dele*, não a deste projeto.
+A versão vem de um único `Directory.Build.props` na raiz deste repositório (`<Version>`/`<AssemblyVersion>`/`<FileVersion>`), aplicado a todos os projetos automaticamente — não precisa mais ser duplicada manualmente em cada `.csproj` (esse era o bug antigo: o `VersionHelper` do updater lia a versão do assembly *Services*, que podia ficar dessincronizada da versão do assembly *UI*). Essa versão identifica apenas esta ferramenta (aparece, por exemplo, no título de janela ou em logs) — ela não é comparada com nada; quem decide se há atualização disponível é o shell, comparando a versão *dele*, não a deste projeto.
 
 ## Convenções
 

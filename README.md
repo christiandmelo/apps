@@ -10,14 +10,14 @@ apps-cm/
     Directory.Build.props     <- versão única do bundle (Version/AssemblyVersion/FileVersion)
     AppsCm.Shell/              <- WinForms, referencia os módulos abaixo via ProjectReference
     AppsCm.Updater/             <- processo separado que aplica a atualização
-  TestCoverageUI/               <- submódulo git
-  git-submodule-sync/            <- submódulo git
-  TestEvidence/                  <- submódulo git
+  TestCoverageUI/               <- ferramenta (pasta do repositório)
+  git-submodule-sync/            <- ferramenta (pasta do repositório)
+  TestEvidence/                  <- ferramenta (pasta do repositório)
   version.json                  <- servido via raw.githubusercontent.com, checado pelo AppsCm.exe no startup
   Release.ps1                   <- script que gera uma nova versão (ver abaixo)
 ```
 
-Cada ferramenta (`TestCoverageUI`, `git-submodule-sync`, `TestEvidence`) continua sendo um repositório próprio, adicionado aqui como submódulo. O `AppsCm.Shell` referencia o projeto `.UI` de cada um via `ProjectReference` e hospeda o `MainForm` deles reparenteado numa aba — não é uma cópia de código, é o mesmo projeto compilado junto.
+Cada ferramenta (`TestCoverageUI`, `git-submodule-sync`, `TestEvidence`) é uma pasta deste repositório (o histórico de cada uma foi preservado). O `AppsCm.Shell` referencia o projeto `.UI` de cada um via `ProjectReference` e hospeda o `MainForm` deles reparenteado numa aba — não é uma cópia de código, é o mesmo projeto compilado junto.
 
 ## Desenvolvimento
 
@@ -26,7 +26,7 @@ dotnet build AppsCm.sln -c Debug
 dotnet run --project src\AppsCm.Shell
 ```
 
-Cada submódulo também continua compilando e rodando standalone (útil para desenvolver só uma ferramenta sem abrir o shell inteiro):
+Cada ferramenta também continua compilando e rodando standalone (útil para desenvolver só uma ferramenta sem abrir o shell inteiro):
 
 ```powershell
 dotnet run --project TestCoverageUI\TestCoverageUI.UI
@@ -38,28 +38,7 @@ dotnet run --project TestEvidence\TestEvidence.UI
 
 A versão do bundle mora **só** em `src\Directory.Build.props`. Todo o resto (publish, zip, hash, `version.json`) é gerado pelo `Release.ps1` — não edite `version.json` à mão.
 
-### 1. Se você mudou algo dentro de um submódulo (`TestCoverageUI` ou `git-submodule-sync`)
-
-Commit e push **dentro da pasta do submódulo**, no repositório dele:
-
-```powershell
-cd TestCoverageUI          # ou git-submodule-sync
-git add -A
-git commit -m "Descrição da mudança"
-git push origin main
-cd ..
-```
-
-Depois, grave o novo ponteiro do submódulo no apps-cm:
-
-```powershell
-git add TestCoverageUI git-submodule-sync
-git commit -m "Atualiza ponteiro dos submódulos"
-```
-
-Pule esta etapa se você só mudou algo dentro do próprio `apps-cm` (`src\`, `Release.ps1`, etc.) — nesse caso os submódulos não têm nada novo para apontar.
-
-### 2. Gerar a versão
+### 1. Gerar a versão
 
 ```powershell
 .\Release.ps1 -Version 1.0.1
@@ -74,7 +53,7 @@ O script:
 
 **Sobre o instalador e o SmartScreen:** o instalador melhora a experiência de instalação (atalho, desinstalador), mas **não** remove o aviso do Windows Defender SmartScreen que aparece durante as atualizações automáticas — isso é sobre o executável não ser assinado digitalmente (cada release tem um hash novo, sem reputação acumulada), não sobre zip vs instalador. Ficou de fora por decisão consciente; `Release.ps1` já tem um parâmetro opcional `-SigningCertThumbprint` pronto para quando (se) a assinatura de código for adotada.
 
-### 3. Commitar o bump de versão
+### 2. Commitar o bump de versão
 
 ```powershell
 git add src\Directory.Build.props version.json
@@ -82,7 +61,7 @@ git commit -m "Bump de versão para 1.0.1"
 git push origin main
 ```
 
-### 4. Criar a release no GitHub
+### 3. Criar a release no GitHub
 
 A tag precisa ser **exatamente** o número da versão (`1.0.1`), e os dois assets anexados precisam se chamar **exatamente** `apps-cm.zip` e `apps-cm-setup.exe` — é isso que `url`/`installerUrl` em `version.json` esperam. Os dois arquivos ficam na raiz do repositório depois do `Release.ps1` e não são commitados (estão no `.gitignore`); só existem como asset da release.
 
