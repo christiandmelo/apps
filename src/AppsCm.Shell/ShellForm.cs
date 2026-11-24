@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using AppsCm.Shell.Atualizacao;
 using AppsCm.Shell.Contratos;
 using AppsCm.Shell.Modulos;
@@ -79,12 +79,32 @@ public partial class ShellForm : Form
     };
 
     foreach (var modulo in Modulos)
-      painel.Controls.Add(CriarTile(modulo));
+      painel.Controls.Add(CriarTile(modulo.NomeExibicao, modulo.Icone?.ToBitmap(), () => AbrirModulo(modulo)));
+
+    // não é um IAppModule: abre a tela modal de configurações gerais (Jira, clientes e projetos)
+    painel.Controls.Add(CriarTile("Configurações", CriarIconeEngrenagem(), AbrirConfiguracoesGerais));
 
     return new TabPage("Apps") { Controls = { painel } };
   }
 
-  private Control CriarTile(IAppModule modulo)
+  private void AbrirConfiguracoesGerais()
+  {
+    using var form = new ConfiguracoesGeraisForm();
+    form.ShowDialog(this);
+  }
+
+  private static Bitmap CriarIconeEngrenagem()
+  {
+    var bmp = new Bitmap(56, 56);
+    using var g = Graphics.FromImage(bmp);
+    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+    using var fonte = new Font("Segoe MDL2 Assets", 34f);
+    TextRenderer.DrawText(g, "\uE713", fonte, new Rectangle(0, 0, 56, 56), Tema.TextoSecundario,
+      TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+    return bmp;
+  }
+
+  private Control CriarTile(string textoNome, Image? icone, Action aoAbrir)
   {
     const int ladoIcone = 56;
 
@@ -101,12 +121,12 @@ public partial class ShellForm : Form
       Location = new Point((tile.Width - ladoIcone) / 2, 16),
       SizeMode = PictureBoxSizeMode.Zoom,
       Cursor = Cursors.Hand,
-      Image = modulo.Icone?.ToBitmap(),
+      Image = icone,
     };
 
     var nome = new Label
     {
-      Text = modulo.NomeExibicao,
+      Text = textoNome,
       TextAlign = ContentAlignment.TopCenter,
       Location = new Point(4, ladoIcone + 26),
       Size = new Size(tile.Width - 8, 60),
@@ -118,7 +138,7 @@ public partial class ShellForm : Form
     tile.Controls.Add(imagem);
     tile.Controls.Add(nome);
 
-    void AoClicar(object? s, EventArgs e) => AbrirModulo(modulo);
+    void AoClicar(object? s, EventArgs e) => aoAbrir();
     tile.Click += AoClicar;
     imagem.Click += AoClicar;
     nome.Click += AoClicar;
