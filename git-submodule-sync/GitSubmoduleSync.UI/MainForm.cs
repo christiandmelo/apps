@@ -1,5 +1,6 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
+using AppsCm.Visual;
 using GitSubmoduleSync.Models;
 using GitSubmoduleSync.Services;
 
@@ -30,6 +31,22 @@ public partial class MainForm : Form
   private bool _emExecucao;
   private bool _inicializado;
 
+  // o tema é aplicado aqui, e não no Designer, que o Visual Studio regrava
+  private void AplicarTema()
+  {
+    Tema.Aplicar(this);
+    Tema.EstilizarMenu(menuStrip);
+    Tema.EstilizarAbas(tabControl);
+    Tema.EstilizarCampo(cboPerfil);
+    Tema.EstilizarLista(lvErros);
+    Tema.ComoPrimario(btnExecutarTudo, tamanhoFixo: true);
+    foreach (var b in new[] { btnSoSincronizar, btnSoCompilar, btnConfiguracoes, btnAtualizarPonteiros, btnCopiarResumo })
+      Tema.ComoSecundario(b, tamanhoFixo: true);
+    Tema.ComoPerigo(btnCancelar, tamanhoFixo: true);
+    foreach (var l in new[] { lblPasta, lblBranchBase, lblBinCustom, lblProgressoGit, lblProgressoBuild, lblDependencias })
+      l.ForeColor = Tema.TextoSecundario;
+  }
+
   /// <summary>Dono a usar em ShowDialog/MessageBox: o próprio Form quando top-level,
   /// ou o Form que o hospeda quando reparenteado (TopLevel=false) por um shell.</summary>
   private IWin32Window Dono => (IWin32Window?)ParentForm ?? this;
@@ -41,6 +58,7 @@ public partial class MainForm : Form
   public MainForm()
   {
     InitializeComponent();
+    AplicarTema();
     Icon = IconeApp.Obter();
 
     lvErros.ListViewItemSorter = new ErroPorOndaEProjetoComparer();

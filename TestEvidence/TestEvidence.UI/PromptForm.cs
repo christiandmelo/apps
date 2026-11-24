@@ -1,3 +1,5 @@
+using AppsCm.Visual;
+
 namespace TestEvidence.UI;
 
 /// <summary>Diálogo simples de uma linha de texto.</summary>
@@ -15,20 +17,21 @@ public sealed class PromptForm : Form
     MaximizeBox = MinimizeBox = false;
     ShowInTaskbar = false;
     TopMost = true;
-    ClientSize = new Size(360, 110);
+    ClientSize = new Size(380, 150);
 
-    var lbl = new Label { Text = mensagem, Dock = DockStyle.Top, Height = 24 };
+    var lbl = Tema.Rotulo(mensagem);
+    lbl.Dock = DockStyle.Top;
     _txt.Text = valorInicial;
-    var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Left = 190, Top = 72, Width = 75 };
-    var cancelar = new Button { Text = "Cancelar", DialogResult = DialogResult.Cancel, Left = 272, Top = 72, Width = 75 };
+    Tema.EstilizarCampo(_txt);
+    var ok = Tema.BotaoPrimario("OK");
+    ok.DialogResult = DialogResult.OK;
+    var cancelar = Tema.BotaoSecundario("Cancelar");
+    cancelar.DialogResult = DialogResult.Cancel;
 
-    var topo = new Panel { Dock = DockStyle.Top, Height = 60, Padding = new Padding(12, 10, 12, 0) };
-    topo.Controls.Add(_txt);
-    topo.Controls.Add(lbl);
-    Controls.Add(ok);
-    Controls.Add(cancelar);
-    Controls.Add(topo);
-    AcceptButton = ok;
-    CancelButton = cancelar;
+    var corpo = new Panel();
+    corpo.Controls.Add(_txt);
+    corpo.Controls.Add(lbl);
+    Tema.Dialogo(this, corpo, ok, cancelar);
+    StartPosition = FormStartPosition.CenterScreen;
   }
 }

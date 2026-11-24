@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitSubmoduleSync.Services",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitSubmoduleSync.UI", "GitSubmoduleSync.UI\GitSubmoduleSync.UI.csproj", "{79C0E05F-21E5-4DEB-A587-6D0E64D5A08C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppsCm.Visual", "..\src\AppsCm.Visual\AppsCm.Visual.csproj", "{07AFE77F-75BD-431E-8D5D-171981C32467}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{79C0E05F-21E5-4DEB-A587-6D0E64D5A08C}.Release|x64.Build.0 = Release|Any CPU
 		{79C0E05F-21E5-4DEB-A587-6D0E64D5A08C}.Release|x86.ActiveCfg = Release|Any CPU
 		{79C0E05F-21E5-4DEB-A587-6D0E64D5A08C}.Release|x86.Build.0 = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|x64.Build.0 = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Debug|x86.Build.0 = Debug|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|x64.ActiveCfg = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|x64.Build.0 = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|x86.ActiveCfg = Release|Any CPU
+		{07AFE77F-75BD-431E-8D5D-171981C32467}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

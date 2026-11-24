@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GitSubmoduleSync.Services\GitSubmoduleSync.Services.csproj" />
     <ProjectReference Include="..\GitSubmoduleSync.Models\GitSubmoduleSync.Models.csproj" />
+    <ProjectReference Include="..\..\src\AppsCm.Visual\AppsCm.Visual.csproj" />
   </ItemGroup>
 
   <ItemGroup>

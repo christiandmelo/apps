@@ -1,3 +1,4 @@
+using AppsCm.Visual;
 using TestEvidence.Models;
 
 namespace TestEvidence.UI;
@@ -19,7 +20,7 @@ public sealed class NovaSessaoForm : Form
     StartPosition = FormStartPosition.CenterParent;
     MaximizeBox = MinimizeBox = false;
     ShowInTaskbar = false;
-    ClientSize = new Size(560, 520);
+    ClientSize = new Size(640, 600);
 
     Dados.Testador = string.IsNullOrWhiteSpace(config.UltimoTestador) ? Environment.UserName : config.UltimoTestador;
     Dados.Ambiente = config.UltimoAmbiente;
@@ -27,17 +28,15 @@ public sealed class NovaSessaoForm : Form
     Dados.EtapaAtual = Dados.Etapas.FirstOrDefault() ?? "Antes";
     _cabecalho.Carregar(Dados, config.AmbientesUsados);
 
-    var iniciar = new Button { Text = "Iniciar", Width = 90, Left = 360, Top = 12 };
-    var cancelar = new Button { Text = "Cancelar", DialogResult = DialogResult.Cancel, Width = 90, Left = 458, Top = 12 };
+    var iniciar = Tema.BotaoPrimario("Iniciar");
+    var cancelar = Tema.BotaoSecundario("Cancelar");
+    cancelar.DialogResult = DialogResult.Cancel;
     iniciar.Click += (_, _) => Confirmar();
-    var rodape = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-    rodape.Controls.Add(iniciar);
-    rodape.Controls.Add(cancelar);
 
-    Controls.Add(_cabecalho);
-    Controls.Add(rodape);
-    AcceptButton = null;
-    CancelButton = cancelar;
+    var corpo = new Panel();
+    corpo.Controls.Add(_cabecalho);
+    Tema.Dialogo(this, corpo, iniciar, cancelar);
+    AcceptButton = null;   // campos multilinha usam Enter
   }
 
   private void Confirmar()

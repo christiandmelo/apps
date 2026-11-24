@@ -1,4 +1,5 @@
 ﻿using TestCoverageUI.Models;
+using AppsCm.Visual;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TestCoverageUI.UI
@@ -11,6 +12,7 @@ namespace TestCoverageUI.UI
     public ConfigForm()
     {
       InitializeComponent();
+      AplicarTema();
 
       txtOpenCover.Text = "Tools\\OpenCover\\OpenCover.Console.exe";
       txtReportGen.Text = "Tools\\ReportGenerator\\net8.0\\reportgenerator.exe";
@@ -20,6 +22,7 @@ namespace TestCoverageUI.UI
     public ConfigForm(string profileName)
     {
       InitializeComponent();
+      AplicarTema();
 
       var config = ProfilesConfig.Load();
       _editingProfile = config.GetProfile(profileName);
@@ -29,6 +32,19 @@ namespace TestCoverageUI.UI
         _isEditing = true;
         PreencherCampos(_editingProfile);
       }
+    }
+
+    private void AplicarTema()
+    {
+      Tema.Aplicar(this);
+      foreach (var campo in new Control[] { txtOpenCover, txtReportGen, txtVSTest, txtBinPath, txtPrefixDll, txtSuffixDll, txtProfileName })
+        Tema.EstilizarCampo(campo);
+      Tema.ComoPrimario(btnSave, tamanhoFixo: true);
+      Tema.ComoSecundario(btnCancel, tamanhoFixo: true);
+      foreach (var b in new[] { btnBrowseOpenCover, btnBrowseReportGen, btnBrowseVSTest, btnBrowseBin })
+        Tema.ComoSecundario(b, tamanhoFixo: true);
+      foreach (var l in new[] { label1, label2, label3, label4, label5, label6, label7 })
+        l.ForeColor = Tema.TextoSecundario;
     }
 
     private void PreencherCampos(CoverageProfile profile)
